@@ -1,71 +1,102 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Buyer</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>The Buyer Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg-color: #2fb8b8;
-            --container-bg: #ffffff;
-            --text-color: #333333;
-            --button-color: #2fb8b8;
-        }
-        body { background-color: var(--bg-color); font-family: sans-serif; margin: 0; display: flex; justify-content: center; padding: 10px; color: var(--text-color); }
-        .app-container { background: var(--container-bg); width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; min-height: 80vh; }
-        h1 { text-align: center; color: #2fb8b8; margin-bottom: 15px; font-size: 22px; }
-        .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; position: relative; }
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
-        
-        .suggestions { position: absolute; top: 45px; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 10px; z-index: 10; max-height: 120px; overflow-y: auto; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
-
-        button { padding: 12px; background-color: var(--button-color); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
-        .list-item span { flex-grow: 1; }
-        .delete-btn { background: #ff4d4d; color: white; border: none; padding: 8px 12px; border-radius: 8px; margin-left: 10px; }
-
-        .total-container {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 2px solid #2fb8b8;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 20px;
-            font-weight: bold;
-            color: #2fb8b8;
-        }
+        body { background-color: #2fb8b8; font-family: sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { color: #2fb8b8; text-align: center; margin-top: 0; }
+        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .del-btn { background: #ff4d4d; width: auto; padding: 5px 10px; margin: 0; }
+        .total { margin-top: 20px; font-size: 18px; font-weight: bold; color: #2fb8b8; text-align: right; border-top: 2px solid #2fb8b8; padding-top: 10px; }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <h1>🛒 The Buyer</h1>
-        <div class="input-group">
-            <input type="text" id="itemInput" placeholder="Что купить?" oninput="showSuggestions(this.value)" autocomplete="off">
-            <div id="suggestionsBox" class="suggestions"></div>
-            
-            <input type="number" id="priceInput" placeholder="Цена (₽)">
-            <select id="categorySelect">
-                <option value="🍎 Продукты">🍎 Продукты</option>
-                <option value="🏠 Дом">🏠 Дом</option>
-                <option value="💊 Аптека">💊 Аптека</option>
-            </select>
-            <button onclick="addItem()">Добавить в список</button>
-        </div>
-
-        <div id="shoppingList"></div>
-
-        <div class="total-container">
-            <span>Итого:</span>
-            <span id="totalPrice">0 ₽</span>
-        </div>
+        <h1>🛒 The Buyer (Cloud)</h1>
+        <input type="text" id="name" placeholder="Что купить?">
+        <input type="number" id="price" placeholder="Цена (₽)">
+        <select id="cat">
+            <option>🍎 Продукты</option>
+            <option>🏠 Дом</option>
+            <option>💊 Аптека</option>
+        </select>
+        <button id="addBtn" onclick="add()">Добавить в облако</button>
+        <div id="list">Загрузка...</div>
+        <div class="total" id="total">Итого: 0 ₽</div>
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
+        // ТВОИ ДАННЫЕ ИЗ SUPABASE (Замени на свои!)
+        const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
 
-        const commonItems = ["Молоко", "Хлеб", "Яйца", "Сыр", "Курица", "Яблоки", "Бананы", "Картофель", "Помидоры", "Макароны", "Рис",
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadItems() {
+            const { data, error } = await supabase
+                .from('shopping_list')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) {
+                console.error(error);
+                document.getElementById('list').innerText = 'Ошибка базы. Проверь таблицу!';
+                return;
+            }
+
+            const listDiv = document.getElementById('list');
+            const totalDiv = document.getElementById('total');
+            listDiv.innerHTML = '';
+            let sum = 0;
+
+            data.forEach((item) => {
+                sum += Number(item.price);
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `
+                    <span><b>${item.name}</b> — ${item.price}₽<br><small>${item.category}</small></span>
+                    <button class="del-btn" onclick="del(${item.id})">×</button>
+                `;
+                listDiv.appendChild(div);
+            });
+            totalDiv.innerText = `Итого: ${sum} ₽`;
+        }
+
+        async function add() {
+            const n = document.getElementById('name').value;
+            const p = document.getElementById('price').value || 0;
+            const c = document.getElementById('cat').value;
+            const btn = document.getElementById('addBtn');
+
+            if (n) {
+                btn.disabled = true;
+                btn.innerText = 'Сохранение...';
+                const { error } = await supabase
+                    .from('shopping_list')
+                    .insert([{ name: n, price: p, category: c }]);
+                
+                if (!error) {
+                    document.getElementById('name').value = '';
+                    document.getElementById('price').value = '';
+                    await loadItems();
+                }
+                btn.disabled = false;
+                btn.innerText = 'Добавить в облако';
+            }
+        }
+
+        async function del(id) {
+            await supabase.from('shopping_list').delete().eq('id', id);
+            await loadItems();
+        }
+
+        loadItems();
+    </script>
+</body>
+</html>
