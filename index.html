@@ -3,61 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food: Health & Shop</title>
+    <title>Project Food: Recipes & Health</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { background-color: #2fb8b8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .app-container { background: white; width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-height: 90vh; }
         .header h1 { color: #2fb8b8; text-align: center; margin: 0 0 20px; font-size: 26px; }
-        .section-title { color: #555; font-size: 12px; margin: 20px 0 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
-        select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 12px; border: 1px solid #eee; box-sizing: border-box; font-size: 15px; }
+        .section-title { color: #555; font-size: 11px; margin: 20px 0 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; gap: 5px; }
+        
+        select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 12px; border: 1px solid #eee; box-sizing: border-box; font-size: 15px; outline: none; }
         button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:active { transform: scale(0.97); }
-        .btn-orange { background-color: #ff9800; margin-bottom: 20px; }
-        
+        .btn-orange { background-color: #ff9800; box-shadow: 0 4px 0 #e68a00; margin-bottom: 20px; }
+        .btn-orange:active { box-shadow: 0 0 0; margin-top: 10px; margin-bottom: 11px; }
+
         .item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f0f0f0; }
-        .item-info b { font-size: 17px; color: #333; display: block; margin-bottom: 4px; }
-        .badges { display: flex; gap: 5px; flex-wrap: wrap; }
-        .badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
-        .bg-weight { background: #e0f2f2; color: #00897b; }
-        .bg-kcal { background: #fff3e0; color: #e65100; }
-        .bg-price { background: #f5f5f5; color: #616161; }
+        .item-info b { font-size: 17px; color: #333; display: block; margin-bottom: 5px; }
+        .badge-row { display: flex; gap: 5px; align-items: center; }
+        .badge { font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: bold; text-transform: uppercase; }
+        .bg-w { background: #e0f2f2; color: #00897b; }
+        .bg-c { background: #fff3e0; color: #e65100; }
         
-        .del-btn { background: #ff4d4d; width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .del-btn { background: #ff4d4d; width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
         
-        .summary-card { margin-top: 30px; padding: 20px; background: #2fb8b8; color: white; border-radius: 18px; box-shadow: 0 5px 15px rgba(47,184,184,0.4); }
-        .summary-kcal { font-size: 14px; opacity: 0.9; margin-bottom: 5px; }
-        .summary-total { font-size: 24px; font-weight: bold; }
+        /* Стили блока Итого как на скриншоте 1000058170.jpg */
+        .summary-card { margin-top: 30px; padding: 20px; background: #2fb8b8; color: white; border-radius: 25px; box-shadow: 0 5px 15px rgba(47,184,184,0.4); }
+        .summary-kcal { font-size: 15px; opacity: 0.9; margin-bottom: 8px; }
+        .summary-total { font-size: 32px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="app-container">
         <div class="header"><h1>🛒 Project Food</h1></div>
 
-        <div class="section-title">🥗 Выбрать рецепт</div>
+        <div class="section-title">🥗 ВЫБРАТЬ РЕЦЕПТ</div>
         <select id="recipeSelect"><option>Загрузка рецептов...</option></select>
         <button class="btn-orange" onclick="importRecipe()">Добавить в список</button>
 
-        <div class="section-title">📝 Мой список</div>
-        <div id="shoppingList">Загрузка данных...</div>
-        
-        <div class="summary-card">
-            <div id="totalKcal" class="summary-kcal">Всего: 0 ккал</div>
-            <div id="totalSum" class="summary-total">0 ₽</div>
-        </div>
-    </div>
-
-    <script>
-        const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        async function loadRecipes() {
-            const { data } = await supabaseClient.from('recipes').select('*');
-            if (data) document.getElementById('recipeSelect').innerHTML = data.map(r => <option value="${r.id}">${r.title}</option>).join('');
-        }
-
-        async function importRecipe() {
-            const id = document.getElementById('recipeSelect').value;
-            const { data: recipe } = await supabaseClient.from('recipes').select('ingredients').eq('id', id).single();
+        <div class="section-title">📝 МОЙ СПИСОК</div>
+        <div id="shoppingList
