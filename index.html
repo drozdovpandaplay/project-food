@@ -1,10 +1,84 @@
-async function importRecipe() {
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Project Food: Health & Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background-color: #2fb8b8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-height: 92vh; }
+        .header h1 { color: #2fb8b8; text-align: center; margin: 0 0 25px; font-size: 30px; }
+        
+        .section-title { color: #666; font-size: 12px; margin: 25px 0 12px; text-transform: uppercase; font-weight: 900; letter-spacing: 1.2px; display: flex; align-items: center; gap: 8px; }
+        
+        select, button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 15px; border: 1px solid #f0f0f0; box-sizing: border-box; font-size: 16px; outline: none; }
+        button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s ease; }
+        button:active { transform: scale(0.96); opacity: 0.9; }
+        
+        .btn-orange { background-color: #ff9800; box-shadow: 0 5px 0 #e68a00; margin-bottom: 25px; }
+        .btn-orange:active { box-shadow: 0 0 0; margin-top: 13px; margin-bottom: 12px; }
+
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid #f8f8f8; }
+        .item-info b { font-size: 18px; color: #333; display: block; margin-bottom: 6px; }
+        
+        .tag-row { display: flex; gap: 6px; align-items: center; }
+        .tag { font-size: 11px; padding: 4px 10px; border-radius: 8px; font-weight: 800; text-transform: uppercase; }
+        .tag-w { background: #e0f7f7; color: #009688; }
+        .tag-c { background: #fff3e0; color: #ef6c00; }
+        
+        .del-btn { background: #ff5252; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; }
+        
+        .summary-card { margin-top: 35px; padding: 25px; background: #2fb8b8; color: white; border-radius: 30px; box-shadow: 0 8px 20px rgba(47,184,184,0.4); }
+        .summary-kcal { font-size: 16px; opacity: 0.9; margin-bottom: 10px; font-weight: 600; }
+        .summary-total { font-size: 36px; font-weight: 900; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header"><h1>🛒 Project Food</h1></div>
+
+        <div class="section-title">🥗 ВЫБРАТЬ РЕЦЕПТ</div>
+        <select id="recipeSelect"><option>Загрузка рецептов...</option></select>
+        <button class="btn-orange" onclick="importRecipe()">Добавить в список</button>
+
+        <div class="section-title">📝 МОЙ СПИСОК</div>
+        <div id="shoppingList">Данные загружаются...</div>
+        
+        <div class="summary-card">
+            <div id="totalKcal" class="summary-kcal">Всего: 0 ккал</div>
+            <div id="totalSum" class="summary-total">0 ₽</div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Твои настройки подключения
+        const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadRecipes() {
+            const { data } = await supabaseClient.from('recipes').select('*');
+            const select = document.getElementById('recipeSelect');
+                    if (data && data.length > 0) {
+                select.innerHTML = data.map(r => <option value="${r.id}">${r.title}</option>).join('');
+            } else {
+                select.innerHTML = '<option>Рецепты не найдены</option>';
+            }
+        }
+
+        async function importRecipe() {
             const id = document.getElementById('recipeSelect').value;
             if (!id) return;
 
             const { data: recipe } = await supabaseClient.from('recipes').select('ingredients').eq('id', id).single();
             
             if (recipe?.ingredients) {
+                // Мапим данные из JSON в колонки таблицы shopping_list [cite: 2026-01-23]
                 const items = recipe.ingredients.map(i => ({
                     name: i.n,
                     price: i.p,
@@ -12,8 +86,8 @@ async function importRecipe() {
                     kcal: i.c || 0
                 }));
 
-                await supabaseClient.from('shopping_list').insert(items);
-                loadShoppingList(); // Мгновенное обновление списка
+                const { error } = await supabaseClient.from('shopping_list').insert(items);
+                if (!error) loadShoppingList();
             }
         }
 
