@@ -30,34 +30,30 @@
             <option>💊 Аптека</option>
         </select>
         <button id="addBtn" onclick="add()">Добавить в облако</button>
-        
         <div id="list">Загрузка данных...</div>
         <div class="total" id="total">Итого: 0 ₽</div>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
         let tg = window.Telegram.WebApp;
-        tg.expand(); [cite: 2026-01-20]
+        tg.expand();
 
-        // ТВОИ КЛЮЧИ ИЗ СКРИНШОТОВ
         const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
 
-        // Инициализация клиента Supabase
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); [cite: 2026-01-23]
+        // Ключевое исправление: изменил название переменной на supabaseClient
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Загрузка товаров
         async function loadItems() {
             const listDiv = document.getElementById('list');
             const { data, error } = await supabaseClient
                 .from('shopping_list')
                 .select('*')
-                .order('id', { ascending: false }); [cite: 2026-01-23]
+                .order('id', { ascending: false });
 
             if (error) {
                 console.error(error);
-                listDiv.innerText = 'Ошибка базы. Проверь таблицу в Supabase!';
+                listDiv.innerText = 'Ошибка базы. Проверь таблицу!';
                 return;
             }
 
@@ -75,10 +71,9 @@
                 `;
                 listDiv.appendChild(div);
             });
-            totalDiv.innerText = `Итого: ${sum} ₽`; [cite: 2026-01-23]
+            totalDiv.innerText = `Итого: ${sum} ₽`;
         }
 
-        // Добавление товара
         async function add() {
             const nInput = document.getElementById('name');
             const pInput = document.getElementById('price');
@@ -88,14 +83,9 @@
             if (nInput.value) {
                 btn.disabled = true;
                 btn.innerText = 'Сохранение...';
-                
                 const { error } = await supabaseClient
                     .from('shopping_list')
-                    .insert([{ 
-                        name: nInput.value, 
-                        price: pInput.value || 0, 
-                        category: cInput.value 
-                    }]); [cite: 2026-01-23]
+                    .insert([{ name: nInput.value, price: pInput.value || 0, category: cInput.value }]);
                 
                 if (!error) {
                     nInput.value = '';
@@ -107,19 +97,11 @@
             }
         }
 
-        // Удаление товара
         async function del(id) {
-            const { error } = await supabaseClient
-                .from('shopping_list')
-                .delete()
-                .eq('id', id); [cite: 2026-01-23]
-            
-            if (!error) {
-                await loadItems();
-            }
+            await supabaseClient.from('shopping_list').delete().eq('id', id);
+            await loadItems();
         }
 
-        // Первый запуск
         loadItems();
     </script>
 </body>
