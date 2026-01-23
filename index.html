@@ -3,50 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Food</title>
+    <title>The Buyer</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2ecc71; text-align: center; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #2ecc71; color: white; border: none; font-weight: bold; cursor: pointer; }
-        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        :root {
+            --bg-color: #2fb8b8; /* Тот самый бирюзовый */
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --button-color: #2fb8b8;
+        }
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+        .app-container {
+            background: var(--container-bg);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #2fb8b8;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px;
+            background-color: var(--button-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:active { opacity: 0.8; }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .list-item span { font-size: 16px; }
+        .delete-btn {
+            background: #ff4d4d;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🛒 Project Food</h1>
-        <input type="text" id="name" placeholder="Продукт">
-        <input type="number" id="price" placeholder="Цена">
-        <select id="cat">
-            <option>🍎 Продукты</option>
-            <option>🏠 Дом</option>
-            <option>🧼 Гигиена</option>
-        </select>
-        <button onclick="addItem()">Добавить</button>
-        <div id="list"></div>
+    <div class="app-container">
+        <h1>🛒 The Buyer</h1>
+        <div class="input-group">
+            <input type="text" id="itemInput" placeholder="Что купить?">
+            <input type="number" id="priceInput" placeholder="Примерная цена">
+            <select id="categorySelect">
+                <option value="🍎 Продукты">🍎 Продукты</option>
+                <option value="🏠 Дом">🏠 Дом</option>
+                <option value="💊 Аптека">💊 Аптека</option>
+            </select>
+            <button onclick="addItem()">Добавить в список</button>
+        </div>
+        <div id="shoppingList"></div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Расширяем на весь экран
+
+        let items = JSON.parse(localStorage.getItem('shoppingList')) || [];
+
+        function renderItems() {
+            const listDiv = document.getElementById('shoppingList');
+            listDiv.innerHTML = '';
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <span><strong>${item.name}</strong> — ${item.price}₽ <br><small>${item.category}</small></span>
+                    <button class="delete-btn" onclick="removeItem(${index})">Удалить</button>
+                `;
+                listDiv.appendChild(div);
+            });
+            localStorage.setItem('shoppingList', JSON.stringify(items));
+        }
 
         function addItem() {
-            const name = document.getElementById('name').value;
-            const price = document.getElementById('price').value;
-            const cat = document.getElementById('cat').value;
-            if(!name) return;
-            
-            const div = document.createElement('div');
-            div.className = 'item';
-            div.innerHTML = `<span>${cat} <b>${name}</b></span> <span>${price} ₽</span>`;
-            document.getElementById('list').prepend(div);
-            
-            document.getElementById('name').value = '';
-            document.getElementById('price').value = '';.
+            const name = document.getElementById('itemInput').value;
+            const price = document.getElementById('priceInput').value;
+            const category = document.getElementById('categorySelect').value;
+
+            if (name) {
+                items.push({ name, price: price || 0, category });
+                document.getElementById('itemInput').value = '';
+                document.getElementById('priceInput').value = '';
+                renderItems();
+            }
         }
+
+        function removeItem(index) {
+            items.splice(index, 1);
+            renderItems();
+        }
+
+        renderItems();
     </script>
 </body>
 </html>
