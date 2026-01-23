@@ -7,50 +7,147 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #2fb8b8; font-family: sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); min-height: 90vh; }
-        h1 { color: #2fb8b8; text-align: center; margin-bottom: 20px; font-size: 24px; }
-        .section-title { color: #666; font-size: 13px; margin: 20px 0 10px; text-transform: uppercase; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-        button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:active { transform: scale(0.97); }
-        .recipe-card { background: #f0fafa; padding: 15px; border-radius: 12px; border: 2px dashed #2fb8b8; margin-bottom: 10px; }
-        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-        .del-btn { background: #ff4d4d; width: 35px; height: 35px; border-radius: 50%; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
-        .total-box { margin-top: 25px; padding: 15px; background: #2fb8b8; color: white; border-radius: 12px; text-align: right; font-size: 20px; font-weight: bold; }
+        body { background-color: #2fb8b8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-height: 90vh; }
+        
+        .header { text-align: center; color: #2fb8b8; margin-bottom: 25px; }
+        .header h1 { margin: 0; font-size: 28px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .section-title { color: #555; font-size: 13px; margin: 25px 0 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; gap: 5px; }
+        
+        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e0e0e0; box-sizing: border-box; font-size: 16px; outline: none; }
+        
+        .recipe-card { background: #f0fafa; padding: 15px; border-radius: 15px; border: 2px dashed #2fb8b8; margin-bottom: 15px; }
+        
+        button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+        button:active { transform: scale(0.96); opacity: 0.9; }
+        .btn-orange { background-color: #ff9800; box-shadow: 0 4px 0 #e68a00; border-bottom: none; }
+        .btn-orange:active { box-shadow: 0 0 0 #e68a00; margin-top: 12px; margin-bottom: 4px; }
+
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f5f5f5; }
+        .item-info b { display: block; font-size: 16px; color: #333; }
+        .item-info small { color: #888; font-size: 13px; }
+        
+        .del-btn { background: #ff4d4d; width: 35px; height: 35px; border-radius: 10px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        
+        .total-box { margin-top: 30px; padding: 18px; background: #2fb8b8; color: white; border-radius: 15px; text-align: right; font-size: 22px; font-weight: bold; box-shadow: 0 4px 15px rgba(47, 184, 184, 0.3); }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <h1>🛒 Project Food</h1>
+        <div class="header">
+            <h1>🛒 Project Food</h1>
+        </div>
 
-        <div class="section-title">🥗 Выбрать рецепт</div>
+        <div class="section-title">🥗 ВЫБРАТЬ РЕЦЕПТ</div>
         <div class="recipe-card">
             <select id="recipeSelect">
                 <option value="">Загрузка рецептов...</option>
             </select>
-            <button onclick="importRecipe()" style="background-color: #ff9800;">Добавить ингредиенты</button>
+            <button class="btn-orange" onclick="importRecipe()">Добавить ингредиенты</button>
         </div>
 
-        <div class="section-title">✏️ Добавить вручную</div>
+        <div class="section-title">✏️ ДОБАВИТЬ ВРУЧНУЮ</div>
         <input type="text" id="itemName" placeholder="Название продукта">
         <input type="number" id="itemPrice" placeholder="Примерная цена (₽)">
         <button onclick="addItem()">В список</button>
 
-        <div class="section-title">📝 Список покупок</div>
+        <div class="section-title">📝 СПИСОК ПОКУПОК</div>
         <div id="shoppingList">Загрузка данных...</div>
         
         <div class="total-box" id="totalSum">Итого: 0 ₽</div>
     </div>
 
     <script>
-        // Инициализация Telegram
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Подключение к твоей базе Supabase
         const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 1. Загрузка меню из таблицы 'recipes' [cite: 003f3149-
+        // Загрузка рецептов для выпадающего списка
+        async function loadRecipes() {
+            const { data, error } = await supabaseClient.from('recipes').select('*');
+            const select = document.getElementById('recipeSelect');
+            if (!error && data && data.length > 0) {
+                select.innerHTML = data.map(r => `<option value="${r.id}">${r.title}</option>`).join('');
+            } else {
+                select.innerHTML = '<option value="">Рецепты не найдены</option>';
+            }
+        }
+
+        // Перенос ингредиентов из рецепта в список покупок [cite: 2026-01-23]
+        async function importRecipe() {
+            const recipeId = document.getElementById('recipeSelect').value;
+            if (!recipeId) return;
+
+            const { data: recipe } = await supabaseClient
+                .from('recipes')
+                .select('ingredients')
+                .eq('id', recipeId)
+                .single();
+            
+            if (recipe && recipe.ingredients) {
+                const toAdd = recipe.ingredients.map(i => ({
+                    name: i.n,
+                    price: i.p,
+                    category: 'Из рецепта'
+                }));
+                const { error } = await supabaseClient.from('shopping_list').insert(toAdd);
+                if (!error) loadShoppingList();
+            }
+        }
+
+        // Загрузка текущего списка покупок
+        async function loadShoppingList() {
+            const { data, error } = await supabaseClient
+                .from('shopping_list')
+                .select('*')
+                .order('id', { ascending: false });
+            
+            const listDiv = document.getElementById('shoppingList');
+            const totalDiv = document.getElementById('totalSum');
+            
+            if (!error && data) {
+                listDiv.innerHTML = '';
+                let sum = 0;
+                data.forEach(item => {
+                    sum += Number(item.price);
+                    listDiv.innerHTML += `
+                        <div class="item">
+                            <div class="item-info">
+                                <b>${item.name}</b>
+                                <small>${item.price} ₽</small>
+                            </div>
+                            <button class="del-btn" onclick="deleteItem(${item.id})">×</button>
+                        </div>`;
+                });
+                totalDiv.innerText = `Итого: ${sum} ₽`;
+            }
+        }
+
+        async function addItem() {
+            const nameInput = document.getElementById('itemName');
+            const priceInput = document.getElementById('itemPrice');
+            if (nameInput.value) {
+                await supabaseClient.from('shopping_list').insert([{ 
+                    name: nameInput.value, 
+                    price: priceInput.value || 0 
+                }]);
+                nameInput.value = '';
+                priceInput.value = '';
+                loadShoppingList();
+            }
+        }
+
+        async function deleteItem(id) {
+            await supabaseClient.from('shopping_list').delete().eq('id', id);
+            loadShoppingList();
+        }
+
+        loadRecipes();
+        loadShoppingList();
+    </script>
+</body>
+</html>
