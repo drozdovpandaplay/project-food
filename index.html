@@ -36,27 +36,28 @@
     </div>
 
     <script>
+        // Инициализация Telegram WebApp
         let tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.expand(); [cite: 2026-01-20]
 
-        // КОНФИГУРАЦИЯ SUPABASE
-        const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co'; 
-        const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b'; // Замени на sb_publ_...
+        // ТВОИ КЛЮЧИ ИЗ СКРИНШОТОВ
+        const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
 
-        // Исправленная инициализация клиента
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Инициализация клиента Supabase
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); [cite: 2026-01-23]
 
-        // Загрузка товаров из базы
+        // Загрузка товаров
         async function loadItems() {
             const listDiv = document.getElementById('list');
             const { data, error } = await supabaseClient
                 .from('shopping_list')
                 .select('*')
-                .order('id', { ascending: false });
+                .order('id', { ascending: false }); [cite: 2026-01-23]
 
             if (error) {
                 console.error(error);
-                listDiv.innerText = 'Ошибка базы данных. Проверь RLS!';
+                listDiv.innerText = 'Ошибка базы. Проверь таблицу в Supabase!';
                 return;
             }
 
@@ -69,4 +70,57 @@
                 const div = document.createElement('div');
                 div.className = 'item';
                 div.innerHTML = `
-                    <span><b>
+                    <span><b>${item.name}</b> — ${item.price}₽<br><small style="color:gray">${item.category}</small></span>
+                    <button class="del-btn" onclick="del(${item.id})">×</button>
+                `;
+                listDiv.appendChild(div);
+            });
+            totalDiv.innerText = `Итого: ${sum} ₽`; [cite: 2026-01-23]
+        }
+
+        // Добавление товара
+        async function add() {
+            const nInput = document.getElementById('name');
+            const pInput = document.getElementById('price');
+            const cInput = document.getElementById('cat');
+            const btn = document.getElementById('addBtn');
+
+            if (nInput.value) {
+                btn.disabled = true;
+                btn.innerText = 'Сохранение...';
+                
+                const { error } = await supabaseClient
+                    .from('shopping_list')
+                    .insert([{ 
+                        name: nInput.value, 
+                        price: pInput.value || 0, 
+                        category: cInput.value 
+                    }]); [cite: 2026-01-23]
+                
+                if (!error) {
+                    nInput.value = '';
+                    pInput.value = '';
+                    await loadItems();
+                }
+                btn.disabled = false;
+                btn.innerText = 'Добавить в облако';
+            }
+        }
+
+        // Удаление товара
+        async function del(id) {
+            const { error } = await supabaseClient
+                .from('shopping_list')
+                .delete()
+                .eq('id', id); [cite: 2026-01-23]
+            
+            if (!error) {
+                await loadItems();
+            }
+        }
+
+        // Первый запуск
+        loadItems();
+    </script>
+</body>
+</html>
