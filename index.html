@@ -1,25 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Buyer Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { background-color: #2fb8b8; font-family: sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h1 { color: #2fb8b8; text-align: center; margin-top: 0; }
+        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); min-height: 80vh; }
+        h1 { color: #2fb8b8; text-align: center; margin-top: 0; font-size: 22px; }
         input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
         button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { background-color: #ccc; }
         .item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .del-btn { background: #ff4d4d; width: auto; padding: 5px 10px; margin: 0; }
+        .del-btn { background: #ff4d4d; width: auto; padding: 5px 10px; margin: 0; font-size: 14px; }
         .total { margin-top: 20px; font-size: 18px; font-weight: bold; color: #2fb8b8; text-align: right; border-top: 2px solid #2fb8b8; padding-top: 10px; }
+        #list { margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="app-container">
         <h1>🛒 The Buyer (Cloud)</h1>
-        <input type="text" id="name" placeholder="Что купить?">
+        <input type="text" id="name" placeholder="Что купить?" autocomplete="off">
         <input type="number" id="price" placeholder="Цена (₽)">
         <select id="cat">
             <option>🍎 Продукты</option>
@@ -27,30 +30,36 @@
             <option>💊 Аптека</option>
         </select>
         <button id="addBtn" onclick="add()">Добавить в облако</button>
-        <div id="list">Загрузка...</div>
+        
+        <div id="list">Загрузка данных...</div>
         <div class="total" id="total">Итого: 0 ₽</div>
     </div>
 
     <script>
-        // ТВОИ ДАННЫЕ ИЗ SUPABASE (Замени на свои!)
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // КОНФИГУРАЦИЯ SUPABASE
         const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co'; 
-        const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
+        const SUPABASE_KEY = 'ВСТАВЬ_СЮДА_СВОЙ_КЛЮЧ_ИЗ_СТРОКИ_37'; // Замени на sb_publ_...
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Исправленная инициализация клиента
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // Загрузка товаров из базы
         async function loadItems() {
-            const { data, error } = await supabase
+            const listDiv = document.getElementById('list');
+            const { data, error } = await supabaseClient
                 .from('shopping_list')
                 .select('*')
                 .order('id', { ascending: false });
 
             if (error) {
                 console.error(error);
-                document.getElementById('list').innerText = 'Ошибка базы. Проверь таблицу!';
+                listDiv.innerText = 'Ошибка базы данных. Проверь RLS!';
                 return;
             }
 
-            const listDiv = document.getElementById('list');
             const totalDiv = document.getElementById('total');
             listDiv.innerHTML = '';
             let sum = 0;
@@ -60,43 +69,4 @@
                 const div = document.createElement('div');
                 div.className = 'item';
                 div.innerHTML = `
-                    <span><b>${item.name}</b> — ${item.price}₽<br><small>${item.category}</small></span>
-                    <button class="del-btn" onclick="del(${item.id})">×</button>
-                `;
-                listDiv.appendChild(div);
-            });
-            totalDiv.innerText = `Итого: ${sum} ₽`;
-        }
-
-        async function add() {
-            const n = document.getElementById('name').value;
-            const p = document.getElementById('price').value || 0;
-            const c = document.getElementById('cat').value;
-            const btn = document.getElementById('addBtn');
-
-            if (n) {
-                btn.disabled = true;
-                btn.innerText = 'Сохранение...';
-                const { error } = await supabase
-                    .from('shopping_list')
-                    .insert([{ name: n, price: p, category: c }]);
-                
-                if (!error) {
-                    document.getElementById('name').value = '';
-                    document.getElementById('price').value = '';
-                    await loadItems();
-                }
-                btn.disabled = false;
-                btn.innerText = 'Добавить в облако';
-            }
-        }
-
-        async function del(id) {
-            await supabase.from('shopping_list').delete().eq('id', id);
-            await loadItems();
-        }
-
-        loadItems();
-    </script>
-</body>
-</html>
+                    <span><b>
