@@ -3,171 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food: Master Admin</title>
+    <title>Project Food: Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #2fb8b8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-height: 95vh; position: relative; overflow: hidden; }
-        .header h1 { color: #2fb8b8; text-align: center; margin: 10px 0 20px; font-size: 28px; }
-        .section-title { color: #666; font-size: 11px; margin: 20px 0 10px; text-transform: uppercase; font-weight: 900; letter-spacing: 1px; }
-        
-        input, select, button, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 12px; border: 1px solid #f0f0f0; box-sizing: border-box; font-size: 15px; outline: none; }
+        body { background-color: #2fb8b8; font-family: sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); min-height: 95vh; box-sizing: border-box; }
+        .header h1 { color: #2fb8b8; text-align: center; margin-bottom: 20px; }
+        select, button, input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 15px; border: 1px solid #f0f0f0; font-size: 16px; }
         button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-orange { background-color: #ff9800; box-shadow: 0 4px 0 #e68a00; margin-bottom: 20px; }
-        .btn-orange:active { transform: translateY(3px); box-shadow: none; }
-        
-        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
-        .tag { font-size: 10px; padding: 3px 7px; border-radius: 6px; font-weight: 800; margin-right: 4px; }
-        .tag-w { background: #e0f7f7; color: #009688; }
-        .tag-c { background: #fff3e0; color: #ef6c00; }
-
-        /* Админка */
-        #adminPanel { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 20; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .draft-item { font-size: 13px; background: #fdfdfd; padding: 8px; border-radius: 8px; margin-bottom: 5px; border-left: 3px solid #ff9800; }
-        .row { display: flex; gap: 5px; }
-        .danger-zone { margin-top: 30px; padding: 15px; border: 1px dashed #ff5252; border-radius: 15px; }
+        .info-bar { display: flex; justify-content: space-around; background: #f0fafa; padding: 12px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #2fb8b8; font-weight: bold; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .total-card { margin-top: 20px; padding: 20px; background: #2fb8b8; color: white; border-radius: 20px; }
+        #adminPanel { display: none; margin-top: 20px; border-top: 2px dashed #eee; padding-top: 20px; }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <div id="mainUI">
-            <div class="header"><h1>🛒 Project Food</h1></div>
-            <div class="section-title">🥗 ВЫБРАТЬ РЕЦЕПТ</div>
-            <select id="recipeSelect"></select>
-            <button class="btn-orange" onclick="importRecipe()">Добавить в список</button>
-            <div class="section-title">📝 МОЙ СПИСОК</div>
-            <div id="shoppingList"></div>
-            <div id="totalCard" style="margin-top:20px; padding:20px; background:#2fb8b8; color:white; border-radius:20px;">
-                <div id="totalKcal" style="font-size:14px; opacity:0.8;">0 ккал</div>
-                <div id="totalSum" style="font-size:28px; font-weight:900;">0 ₽</div>
-            </div>
-            <button onclick="toggleAdmin(true)" style="background:none; color:#2fb8b8; font-size:13px; margin-top:20px;">⚙️ Панель управления</button>
+        <div class="header"><h1>🛒 Project Food</h1></div>
+        
+        <p style="font-size: 11px; font-weight: 900; color: #666;">🥗 РЕЦЕПТ</p>
+        <select id="recipeSelect" onchange="updateRecipeIcons()"></select>
+        
+        <div class="info-bar">
+            <span id="resW">⚖️ ...</span>
+            <span id="resS">👥 —</span>
         </div>
 
+        <button class="btn-orange" onclick="addWithLivePrices()">Добавить в список</button>
+        
+        <div id="shoppingList"></div>
+        
+        <div class="total-card">
+            <div id="totalKcal" style="font-size:14px; opacity:0.8;">0 ккал</div>
+            <div id="totalSum" style="font-size:32px; font-weight:900;">0 ₽</div>
+        </div>
+
+        <button onclick="document.getElementById('adminPanel').style.display='block'" style="background:none; color:#2fb8b8; font-size:13px;">⚙️ Панель управления</button>
+
         <div id="adminPanel">
-            <div class="header"><h3>Конструктор</h3></div>
-            <input type="text" id="recipeTitle" placeholder="Название блюда">
-            
-            <div style="background:#f9f9f9; padding:10px; border-radius:15px; margin:10px 0;">
-                <div class="section-title" style="margin-top:0;">Добавить продукт:</div>
-                <input type="text" id="ingName" placeholder="Название">
-                <div class="row">
-                    <input type="number" id="ingPrice" placeholder="Цена (₽)">
-                    <input type="text" id="ingWeight" placeholder="Вес">
-                    <input type="number" id="ingKcal" placeholder="Ккал">
-                </div>
-                <button onclick="addToDraft()" style="background:#666;">+ В черновик</button>
-            </div>
-
-            <div id="draftList"></div>
-            
-            <div class="section-title">Или вставь JSON (Вариант 3):</div>
-            <textarea id="jsonInput" style="height:80px; font-size:10px;" placeholder='[{"n":"Название","p":100,"w":"100г","c":50}]'></textarea>
-            
-            <button class="btn-orange" onclick="saveDraftToDB()" style="margin-top:10px;">💾 Сохранить рецепт</button>
-
-            <div class="danger-zone">
-                <div class="section-title" style="color:#ff5252;">Удаление рецептов</div>
-                <select id="deleteSelect" style="border: 1px solid #ff5252;"></select>
-                <button onclick="deleteRecipe()" style="background:#ff5252; font-size:13px;">🗑️ Удалить выбранный рецепт</button>
-            </div>
-
-            <button onclick="toggleAdmin(false)" style="background:#eee; color:#333; margin-top:20px;">Назад</button>
+            <h3>Импорт рецептов (CSV)</h3>
+            <input type="file" id="csvFile" accept=".csv">
+            <button onclick="handleCSV()" style="background:#4caf50;">Загрузить CSV</button>
+            <button onclick="document.getElementById('adminPanel').style.display='none'" style="background:#ccc;">Закрыть</button>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let draftIngredients = [];
+        const S_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
+        const S_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
+        const sb = supabase.createClient(S_URL, S_KEY);
 
-        function toggleAdmin(s) { 
-            document.getElementById('adminPanel').style.display = s ? 'block' : 'none'; 
-            if(s) loadRecipesForDelete();
+        let recipes = [];
+        let priceList = {};
+
+        async function init() {
+            // Загружаем рецепты и цены из таблицы products
+            const [rData, pData] = await Promise.all([
+                sb.from('recipes').select('*'),
+                sb.from('products').select('*')
+            ]);
+
+            if (rData.data) {
+                recipes = rData.data;
+                document.getElementById('recipeSelect').innerHTML = recipes.map(r => `<option value="${r.id}">${r.title}</option>`).join('');
+                updateRecipeIcons();
+            }
+
+            if (pData.data) {
+                // Превращаем массив в словарь { "Томаты": 250 }
+                pData.data.forEach(p => priceList[p.name] = p.price_per_unit);
+            }
+            loadShoppingList();
         }
 
-        function addToDraft() {
-            const n = document.getElementById('ingName').value, p = parseInt(document.getElementById('ingPrice').value),
-                  w = document.getElementById('ingWeight').value, c = parseInt(document.getElementById('ingKcal').value);
-            if(n && p) {
-                draftIngredients.push({n, p, w, c});
-                renderDraft();
-                ['ingName','ingPrice','ingWeight','ingKcal'].forEach(id => document.getElementById(id).value = '');
+        function updateRecipeIcons() {
+            const r = recipes.find(x => x.id == document.getElementById('recipeSelect').value);
+            if (r) {
+                document.getElementById('resW').innerText = "⚖️ " + (r.total_weight || "—");
+                document.getElementById('resS').innerText = "👥 " + (r.servings || "—");
             }
         }
 
-        function renderDraft() {
-            document.getElementById('draftList').innerHTML = draftIngredients.map((item, i) => 
-                `<div class="draft-item">${item.n} — ${item.p}₽ <span style="float:right" onclick="draftIngredients.splice(${i},1);renderDraft()">❌</span></div>`
-            ).join('');
-        }
-
-        async function saveDraftToDB() {
-            const title = document.getElementById('recipeTitle').value;
-            let finalIngredients = draftIngredients;
-            const jsonText = document.getElementById('jsonInput').value;
-
-            if (jsonText.trim() !== "") {
-                try { finalIngredients = JSON.parse(jsonText); } 
-                catch (e) { alert("Ошибка в JSON!"); return; }
-            }
-
-            if(title && finalIngredients.length > 0) {
-                await supabaseClient.from('recipes').insert([{ title, ingredients: finalIngredients }]);
-                alert('Рецепт сохранен!');
-                draftIngredients = []; document.getElementById('jsonInput').value = '';
-                renderDraft(); toggleAdmin(false); loadRecipes();
+        async function addWithLivePrices() {
+            const r = recipes.find(x => x.id == document.getElementById('recipeSelect').value);
+            if (r?.ingredients) {
+                const items = r.ingredients.map(ing => ({
+                    name: ing.n,
+                    // Если продукт есть в базе цен — берем оттуда, если нет — берем старую цену из рецепта
+                    price: priceList[ing.n] || ing.p,
+                    weight: ing.w,
+                    kcal: ing.c
+                }));
+                await sb.from('shopping_list').insert(items);
+                loadShoppingList();
             }
         }
 
-        async function loadRecipes() {
-            const { data } = await supabaseClient.from('recipes').select('*');
-            if(data) document.getElementById('recipeSelect').innerHTML = data.map(r => `<option value="${r.id}">${r.title}</option>`).join('');
+        async function handleCSV() {
+            const file = document.getElementById('csvFile').files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const rows = e.target.result.split('\n').slice(1);
+                const toInsert = rows.filter(r => r.trim()).map(r => {
+                    const c = r.split(';');
+                    return { title: c[0], total_weight: c[1], servings: c[2], ingredients: JSON.parse(c[3].replace(/""/g, '"')) };
+                });
+                await sb.from('recipes').insert(toInsert);
+                alert("Импортировано!");
+                init();
+            };
+            reader.readAsText(file);
         }
 
-        async function loadRecipesForDelete() {
-            const { data } = await supabaseClient.from('recipes').select('*');
-            if(data) document.getElementById('deleteSelect').innerHTML = data.map(r => `<option value="${r.id}">${r.title}</option>`).join('');
-        }
-
-        async function deleteRecipe() {
-            const id = document.getElementById('deleteSelect').value;
-            if(confirm("Точно удалить этот рецепт?")) {
-                await supabaseClient.from('recipes').delete().eq('id', id);
-                alert("Удалено!");
-                loadRecipes(); loadRecipesForDelete();
-            }
-        }
-
-        async function importRecipe() {
-            const id = document.getElementById('recipeSelect').value;
-            const { data } = await supabaseClient.from('recipes').select('ingredients').eq('id', id).single();
-            if(data?.ingredients) {
-                const items = data.ingredients.map(i => ({ name: i.n, price: i.p, weight: i.w, kcal: i.c }));
-                await supabaseClient.from('shopping_list').insert(items);
-                loadList();
-            }
-        }
-
-        async function loadList() {
-            const { data } = await supabaseClient.from('shopping_list').select('*').order('id', {ascending: false});
-            if(data) {
+        async function loadShoppingList() {
+            const { data } = await sb.from('shopping_list').select('*').order('id', {ascending: false});
+            if (data) {
                 let s = 0, k = 0;
                 document.getElementById('shoppingList').innerHTML = data.map(i => {
                     s += (i.price || 0); k += (i.kcal || 0);
-                    return `<div class="item"><div><b>${i.name}</b><br><span class="tag tag-w">${i.weight}</span><span class="tag tag-c">${i.kcal} ккал</span></div>
-                    <button style="width:30px; height:30px; background:#ff5252; padding:0;" onclick="del(${i.id})">×</button></div>`
+                    return `<div class="item">
+                        <div><b>${i.name}</b><br><small>${i.weight} | ${i.price}₽</small></div>
+                        <button onclick="del(${i.id})" style="width:30px; background:red;">×</button>
+                    </div>`;
                 }).join('');
                 document.getElementById('totalSum').innerText = s + ' ₽';
-                document.getElementById('totalKcal').innerText = 'Всего: ' + k + ' ккал';
+                document.getElementById('totalKcal').innerText = k + ' ккал';
             }
         }
 
-        async function del(id) { await supabaseClient.from('shopping_list').delete().eq('id', id); loadList(); }
+        async function del(id) { await sb.from('shopping_list').delete().eq('id', id); loadShoppingList(); }
 
-        loadRecipes(); loadList();
+        init();
     </script>
 </body>
 </html>
