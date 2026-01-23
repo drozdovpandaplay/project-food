@@ -3,33 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food: Admin & Shop</title>
+    <title>Project Food: Master Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #2fb8b8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-height: 92vh; position: relative; }
-        .header h1 { color: #2fb8b8; text-align: center; margin: 0 0 25px; font-size: 30px; }
-        .section-title { color: #666; font-size: 12px; margin: 25px 0 12px; text-transform: uppercase; font-weight: 900; letter-spacing: 1.2px; }
+        body { background-color: #2fb8b8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-height: 95vh; position: relative; overflow: hidden; }
+        .header h1 { color: #2fb8b8; text-align: center; margin: 10px 0 20px; font-size: 28px; }
+        .section-title { color: #666; font-size: 11px; margin: 20px 0 10px; text-transform: uppercase; font-weight: 900; letter-spacing: 1px; }
         
-        select, button, input, textarea { width: 100%; padding: 15px; margin: 8px 0; border-radius: 15px; border: 1px solid #f0f0f0; box-sizing: border-box; font-size: 16px; outline: none; }
-        button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s ease; }
-        button:active { transform: scale(0.96); opacity: 0.9; }
-        .btn-orange { background-color: #ff9800; box-shadow: 0 5px 0 #e68a00; margin-bottom: 25px; }
+        input, select, button, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 12px; border: 1px solid #f0f0f0; box-sizing: border-box; font-size: 15px; outline: none; }
+        button { background-color: #2fb8b8; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-orange { background-color: #ff9800; box-shadow: 0 4px 0 #e68a00; margin-bottom: 20px; }
+        .btn-orange:active { transform: translateY(3px); box-shadow: none; }
         
-        .item { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid #f8f8f8; }
-        .item-info b { font-size: 18px; color: #333; display: block; margin-bottom: 6px; }
-        .tag { font-size: 11px; padding: 4px 10px; border-radius: 8px; font-weight: 800; text-transform: uppercase; margin-right: 5px; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
+        .tag { font-size: 10px; padding: 3px 7px; border-radius: 6px; font-weight: 800; margin-right: 4px; }
         .tag-w { background: #e0f7f7; color: #009688; }
         .tag-c { background: #fff3e0; color: #ef6c00; }
-        
-        .summary-card { margin-top: 35px; padding: 25px; background: #2fb8b8; color: white; border-radius: 30px; }
-        .summary-total { font-size: 36px; font-weight: 900; }
 
-        /* Стили админки */
-        #adminPanel { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10; padding: 25px; box-sizing: border-box; border-radius: 25px; overflow-y: auto; }
-        .admin-close { background: #eee; color: #333; margin-top: 20px; }
-        textarea { height: 150px; font-family: monospace; font-size: 12px; }
+        /* Админка */
+        #adminPanel { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 20; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .draft-item { font-size: 13px; background: #fdfdfd; padding: 8px; border-radius: 8px; margin-bottom: 5px; border-left: 3px solid #ff9800; }
+        .row { display: flex; gap: 5px; }
+        .danger-zone { margin-top: 30px; padding: 15px; border: 1px dashed #ff5252; border-radius: 15px; }
     </style>
 </head>
 <body>
@@ -37,27 +34,46 @@
         <div id="mainUI">
             <div class="header"><h1>🛒 Project Food</h1></div>
             <div class="section-title">🥗 ВЫБРАТЬ РЕЦЕПТ</div>
-            <select id="recipeSelect"><option>Загрузка...</option></select>
+            <select id="recipeSelect"></select>
             <button class="btn-orange" onclick="importRecipe()">Добавить в список</button>
-
             <div class="section-title">📝 МОЙ СПИСОК</div>
-            <div id="shoppingList">Загрузка...</div>
-            
-            <div class="summary-card">
-                <div id="totalKcal" style="font-size:16px; opacity:0.8; margin-bottom:5px;">Всего: 0 ккал</div>
-                <div id="totalSum" class="summary-total">0 ₽</div>
+            <div id="shoppingList"></div>
+            <div id="totalCard" style="margin-top:20px; padding:20px; background:#2fb8b8; color:white; border-radius:20px;">
+                <div id="totalKcal" style="font-size:14px; opacity:0.8;">0 ккал</div>
+                <div id="totalSum" style="font-size:28px; font-weight:900;">0 ₽</div>
             </div>
-
-            <button onclick="toggleAdmin(true)" style="background:none; color:#2fb8b8; margin-top:30px; font-size:14px;">⚙️ Панель управления</button>
+            <button onclick="toggleAdmin(true)" style="background:none; color:#2fb8b8; font-size:13px; margin-top:20px;">⚙️ Панель управления</button>
         </div>
 
         <div id="adminPanel">
-            <div class="section-title">🆕 НОВЫЙ РЕЦЕПТ</div>
-            <input type="text" id="newRecipeTitle" placeholder="Название блюда (напр. Цезарь)">
-            <p style="font-size: 12px; color: #666; margin: 10px 0 0;">Вставь JSON ингредиентов (Вариант 3):</p>
-            <textarea id="newRecipeJSON" placeholder='[{"n":"Продукт","p":100,"w":"100г","c":50}]'></textarea>
-            <button onclick="saveNewRecipe()">💾 Сохранить в базу</button>
-            <button class="admin-close" onclick="toggleAdmin(false)">Назад</button>
+            <div class="header"><h3>Конструктор</h3></div>
+            <input type="text" id="recipeTitle" placeholder="Название блюда">
+            
+            <div style="background:#f9f9f9; padding:10px; border-radius:15px; margin:10px 0;">
+                <div class="section-title" style="margin-top:0;">Добавить продукт:</div>
+                <input type="text" id="ingName" placeholder="Название">
+                <div class="row">
+                    <input type="number" id="ingPrice" placeholder="Цена (₽)">
+                    <input type="text" id="ingWeight" placeholder="Вес">
+                    <input type="number" id="ingKcal" placeholder="Ккал">
+                </div>
+                <button onclick="addToDraft()" style="background:#666;">+ В черновик</button>
+            </div>
+
+            <div id="draftList"></div>
+            
+            <div class="section-title">Или вставь JSON (Вариант 3):</div>
+            <textarea id="jsonInput" style="height:80px; font-size:10px;" placeholder='[{"n":"Название","p":100,"w":"100г","c":50}]'></textarea>
+            
+            <button class="btn-orange" onclick="saveDraftToDB()" style="margin-top:10px;">💾 Сохранить рецепт</button>
+
+            <div class="danger-zone">
+                <div class="section-title" style="color:#ff5252;">Удаление рецептов</div>
+                <select id="deleteSelect" style="border: 1px solid #ff5252;"></select>
+                <button onclick="deleteRecipe()" style="background:#ff5252; font-size:13px;">🗑️ Удалить выбранный рецепт</button>
+            </div>
+
+            <button onclick="toggleAdmin(false)" style="background:#eee; color:#333; margin-top:20px;">Назад</button>
         </div>
     </div>
 
@@ -65,76 +81,93 @@
         const SUPABASE_URL = 'https://lmchwsdgusrvdlgfqxku.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_pHlCHJYthhCZmc21bqxa7g_M2Ompd1b';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let draftIngredients = [];
 
-        function toggleAdmin(show) {
-            document.getElementById('adminPanel').style.display = show ? 'block' : 'none';
+        function toggleAdmin(s) { 
+            document.getElementById('adminPanel').style.display = s ? 'block' : 'none'; 
+            if(s) loadRecipesForDelete();
         }
 
-        async function saveNewRecipe() {
-            const title = document.getElementById('newRecipeTitle').value;
-            const jsonText = document.getElementById('newRecipeJSON').value;
+        function addToDraft() {
+            const n = document.getElementById('ingName').value, p = parseInt(document.getElementById('ingPrice').value),
+                  w = document.getElementById('ingWeight').value, c = parseInt(document.getElementById('ingKcal').value);
+            if(n && p) {
+                draftIngredients.push({n, p, w, c});
+                renderDraft();
+                ['ingName','ingPrice','ingWeight','ingKcal'].forEach(id => document.getElementById(id).value = '');
+            }
+        }
 
-            try {
-                const ingredients = JSON.parse(jsonText);
-                const { error } = await supabaseClient.from('recipes').insert([{ title, ingredients }]);
-                
-                if (!error) {
-                    alert('Рецепт успешно добавлен!');
-                    document.getElementById('newRecipeTitle').value = '';
-                    document.getElementById('newRecipeJSON').value = '';
-                    toggleAdmin(false);
-                    loadRecipes();
-                } else { throw error; }
-            } catch (e) {
-                alert('Ошибка в формате JSON или при сохранении: ' + e.message);
+        function renderDraft() {
+            document.getElementById('draftList').innerHTML = draftIngredients.map((item, i) => 
+                `<div class="draft-item">${item.n} — ${item.p}₽ <span style="float:right" onclick="draftIngredients.splice(${i},1);renderDraft()">❌</span></div>`
+            ).join('');
+        }
+
+        async function saveDraftToDB() {
+            const title = document.getElementById('recipeTitle').value;
+            let finalIngredients = draftIngredients;
+            const jsonText = document.getElementById('jsonInput').value;
+
+            if (jsonText.trim() !== "") {
+                try { finalIngredients = JSON.parse(jsonText); } 
+                catch (e) { alert("Ошибка в JSON!"); return; }
+            }
+
+            if(title && finalIngredients.length > 0) {
+                await supabaseClient.from('recipes').insert([{ title, ingredients: finalIngredients }]);
+                alert('Рецепт сохранен!');
+                draftIngredients = []; document.getElementById('jsonInput').value = '';
+                renderDraft(); toggleAdmin(false); loadRecipes();
             }
         }
 
         async function loadRecipes() {
             const { data } = await supabaseClient.from('recipes').select('*');
-            const select = document.getElementById('recipeSelect');
-            if (data) select.innerHTML = data.map(r => `<option value="${r.id}">${r.title}</option>`).join('');
+            if(data) document.getElementById('recipeSelect').innerHTML = data.map(r => `<option value="${r.id}">${r.title}</option>`).join('');
+        }
+
+        async function loadRecipesForDelete() {
+            const { data } = await supabaseClient.from('recipes').select('*');
+            if(data) document.getElementById('deleteSelect').innerHTML = data.map(r => `<option value="${r.id}">${r.title}</option>`).join('');
+        }
+
+        async function deleteRecipe() {
+            const id = document.getElementById('deleteSelect').value;
+            if(confirm("Точно удалить этот рецепт?")) {
+                await supabaseClient.from('recipes').delete().eq('id', id);
+                alert("Удалено!");
+                loadRecipes(); loadRecipesForDelete();
+            }
         }
 
         async function importRecipe() {
             const id = document.getElementById('recipeSelect').value;
             const { data } = await supabaseClient.from('recipes').select('ingredients').eq('id', id).single();
-            if (data?.ingredients) {
+            if(data?.ingredients) {
                 const items = data.ingredients.map(i => ({ name: i.n, price: i.p, weight: i.w, kcal: i.c }));
                 await supabaseClient.from('shopping_list').insert(items);
-                loadShoppingList();
+                loadList();
             }
         }
 
-        async function loadShoppingList() {
-            const { data } = await supabaseClient.from('shopping_list').select('*').order('id', { ascending: false });
-            const listDiv = document.getElementById('shoppingList');
-            if (data) {
-                listDiv.innerHTML = '';
-                let sum = 0, kcal = 0;
-                data.forEach(item => {
-                    sum += (item.price || 0); kcal += (item.kcal || 0);
-                    listDiv.innerHTML += `
-                        <div class="item">
-                            <div class="item-info">
-                                <b>${item.name}</b>
-                                <span class="tag tag-w">${item.weight || '—'}</span>
-                                <span class="tag tag-c">${item.kcal || 0} ккал</span>
-                            </div>
-                            <button style="width:35px; height:35px; background:#ff5252; padding:0;" onclick="deleteItem(${item.id})">×</button>
-                        </div>`;
-                });
-                document.getElementById('totalSum').innerText = sum + ' ₽';
-                document.getElementById('totalKcal').innerText = 'Всего: ' + kcal + ' ккал';
+        async function loadList() {
+            const { data } = await supabaseClient.from('shopping_list').select('*').order('id', {ascending: false});
+            if(data) {
+                let s = 0, k = 0;
+                document.getElementById('shoppingList').innerHTML = data.map(i => {
+                    s += (i.price || 0); k += (i.kcal || 0);
+                    return `<div class="item"><div><b>${i.name}</b><br><span class="tag tag-w">${i.weight}</span><span class="tag tag-c">${i.kcal} ккал</span></div>
+                    <button style="width:30px; height:30px; background:#ff5252; padding:0;" onclick="del(${i.id})">×</button></div>`
+                }).join('');
+                document.getElementById('totalSum').innerText = s + ' ₽';
+                document.getElementById('totalKcal').innerText = 'Всего: ' + k + ' ккал';
             }
         }
 
-        async function deleteItem(id) {
-            await supabaseClient.from('shopping_list').delete().eq('id', id);
-            loadShoppingList();
-        }
+        async function del(id) { await supabaseClient.from('shopping_list').delete().eq('id', id); loadList(); }
 
-        loadRecipes(); loadShoppingList();
+        loadRecipes(); loadList();
     </script>
 </body>
 </html>
