@@ -3,72 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Food: Debug Mode</title>
+    <title>Project Food: Final</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-        .box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
-        .waiting { background: #fff3cd; color: #856404; }
-        .error { background: #f8d7da; color: #721c24; word-break: break-all; }
-        .success { background: #d4edda; color: #155724; }
+        :root { --primary: #46b8bc; --bg: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 24px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        h1 { color: var(--primary); font-size: 22px; margin-bottom: 20px; }
+        select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eee; font-size: 16px; outline: none; }
+        .details { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
+        .info { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; color: var(--primary); }
+        .ing-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>🛠 Диагностика связи</h2>
-        <div id="status-step" class="status waiting">Шаг 1: Проверка библиотеки...</div>
-        <div id="error-details" class="error" style="display:none;"></div>
-        <select id="res-list" style="display:none; width:100%; padding:10px; margin-top:10px;"></select>
+
+<div class="card">
+    <h1>🛒 Project Food</h1>
+    <select id="recipe-select">
+        <option disabled selected>⏳ Загрузка меню...</option>
+    </select>
+
+    <div id="details-box" class="details">
+        <div class="info">
+            <span id="res-weight"></span>
+            <span id="res-serv"></span>
+        </div>
+        <div id="res-ingredients"></div>
     </div>
+</div>
 
 <script>
-    const U = 'https://lmchwsdguarvdigfqxku.supabase.co';
-    const K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
+    const S_URL = 'https://lmchwsdguarvdigfqxku.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
 
-    async function test() {
-        const step = document.getElementById('status-step');
-        const errBox = document.getElementById('error-details');
+    const sb = supabase.createClient(S_URL, S_KEY);
+    let recipes = [];
+
+    async function load() {
+        const { data, error } = await sb.from('recipes').select('*');
+        const sel = document.getElementById('recipe-select');
         
-        try {
-            step.textContent = "Шаг 2: Подключение к Supabase...";
-            const sb = supabase.createClient(U, K);
-            
-            step.textContent = "Шаг 3: Запрос данных из таблицы...";
-            const { data, error } = await sb.from('recipes').select('*');
-            
-            if (error) {
-                step.className = "status error";
-                step.textContent = "Ошибка Supabase!";
-                errBox.style.display = "block";
-                errBox.textContent = `Код: ${error.code} | Сообщение: ${error.message}`;
-                return;
-            }
-
-            step.className = "status success";
-            step.textContent = `Успех! Найдено рецептов: ${data.length}`;
-            
-            const list = document.getElementById('res-list');
-            list.style.display = "block";
-            data.forEach(r => {
-                const o = document.createElement('option');
-                o.textContent = r.title;
-                list.appendChild(o);
-            });
-
-        } catch (e) {
-            step.className = "status error";
-            step.textContent = "Критическая ошибка браузера!";
-            errBox.style.display = "block";
-            errBox.textContent = e.toString();
+        if (error) {
+            sel.innerHTML = '<option>Ошибка доступа (проверь CORS)</option>';
+            return;
         }
+
+        recipes = data;
+        sel.innerHTML = '<option value="" disabled selected>🍽️ Выберите блюдо...</option>';
+        data.forEach(r => {
+            const op = document.createElement('option');
+            op.value = r.id;
+            op.textContent = r.title;
+            sel.appendChild(op);
+        });
     }
-    
-    if (typeof supabase === 'undefined') {
-        document.getElementById('status-step').textContent = "Ошибка: Библиотека не загрузилась!";
-    } else {
-        test();
-    }
+
+    document.getElementById('recipe-select').onchange = (e) => {
+        const r = recipes.find(item => item.id == e.target.value);
+        document.getElementById('details-box').style.display = 'block';
+        document.getElementById('res-weight').textContent = 'Вес: ' + r.total_weight;
+        document.getElementById('res-serv').textContent = 'Порций: ' + r.servings;
+        
+        const ingBox = document.getElementById('res-ingredients');
+        ingBox.innerHTML = '';
+        JSON.parse(r.ingredients || '[]').forEach(i => {
+            ingBox.innerHTML += `<div class="ing-row"><span>${i.n}</span><span>${i.w}</span></div>`;
+        });
+    };
+
+    load();
 </script>
 </body>
 </html>
