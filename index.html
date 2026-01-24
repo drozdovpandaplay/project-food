@@ -3,45 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food: Бюджет</title>
+    <title>Project Food: Меню и Корзина</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         :root { --main: #46b8bc; --bg: #f0f4f3; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px 20px 100px 20px; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
+        .header { background: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .page { display: none; padding: 20px; }
+        .active { display: block; }
         
-        /* Виджет итоговой суммы */
-        .total-banner { 
-            background: var(--main); color: white; padding: 20px; 
-            border-radius: 20px; text-align: center; margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(70, 184, 188, 0.3);
-        }
-        .total-amount { font-size: 32px; font-weight: bold; }
+        /* Карточки рецептов */
+        .recipe-card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--main); }
+        .recipe-info h3 { margin: 0; font-size: 18px; }
+        .recipe-info p { margin: 5px 0 0; color: #888; font-size: 13px; }
 
-        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; border: 1px solid rgba(0,0,0,0.03); }
-        .price-tag { background: #eef8f8; color: var(--main); padding: 5px 12px; border-radius: 10px; font-weight: bold; }
-        
-        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
-        .btn { background: var(--main); color: white; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .del-btn { position: absolute; top: 12px; right: 12px; color: #ff6b6b; border: none; background: none; font-size: 20px; }
-        h3 { margin-top: 0; color: #555; }
+        /* Список покупок */
+        .cart-item { background: white; padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .total-box { background: var(--main); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+
+        /* Навигация */
+        .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 65px; }
+        .nav-btn { flex: 1; border: none; background: none; font-size: 14px; color: #aaa; font-weight: bold; }
+        .nav-btn.active-tab { color: var(--main); }
+
+        .add-btn { background: var(--main); color: white; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; }
+        .clear-btn { background: #ff6b6b; color: white; border: none; padding: 10px; border-radius: 10px; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="total-banner">
-        <div style="opacity: 0.9; font-size: 14px; margin-bottom: 5px;">ОБЩАЯ СУММА:</div>
-        <div class="total-amount"><span id="total-price">0</span> ₽</div>
+    <div class="header">
+        <h2 id="page-title" style="margin:0; color:var(--main);">Выбор блюд</h2>
     </div>
 
-    <div id="recipe-list"></div>
-
-    <div class="card" style="margin-top: 30px; border: 2px dashed var(--main); background: #f9ffff;">
-        <h3>➕ Добавить в список</h3>
-        <input type="text" id="recipeName" placeholder="Продукт или блюдо">
-        <input type="number" id="recipePrice" placeholder="Цена (₽)">
-        <button class="btn" onclick="addRecipe()">Внести в базу</button>
+    <div id="menu-page" class="page active">
+        <div id="recipes-list"></div>
     </div>
+
+    <div id="cart-page" class="page">
+        <div class="total-box">
+            <div style="font-size: 14px; opacity: 0.9;">К ОПЛАТЕ:</div>
+            <div style="font-size: 28px; font-weight: bold;"><span id="total-price">0</span> ₽</div>
+        </div>
+        <div id="shopping-list"></div>
+        <button class="clear-btn" onclick="clearCart()">Очистить список покупок</button>
+    </div>
+
+    <nav class="nav">
+        <button class="nav-btn active-tab" id="btn-menu" onclick="showPage('menu')">🍴 Меню</button>
+        <button class="nav-btn" id="btn-cart" onclick="showPage('cart')">🛒 Корзина</button>
+    </nav>
 
 <script>
     const firebaseConfig = {
@@ -51,54 +63,83 @@
         projectId: "foodproject-4aaf3",
         storageBucket: "foodproject-4aaf3.firebasestorage.app",
         messagingSenderId: "9549297996",
-        appId: "1:9549297996:web:53af7c7e62317143c177e9",
-        measurementId: "G-Q60BGELEV2"
+        appId: "1:9549297996:web:53af7c7e62317143c177e9"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    db.ref("recipes").on("value", (snapshot) => {
-        const data = snapshot.val();
-        const listDiv = document.getElementById("recipe-list");
-        const totalSpan = document.getElementById("total-price");
-        listDiv.innerHTML = "";
+    // Твоя база рецептов
+    const recipesData = [
+        { id: 1, name: "Борщ", desc: "Свекла, мясо, картофель", price: 450, ingredients: ["Говядина 500г", "Свекла 2шт", "Картофель 3шт"] },
+        { id: 2, name: "Плов", desc: "Рис, морковь, мясо", price: 600, ingredients: ["Рис 500г", "Баранина 600г", "Морковь 500г"] },
+        { id: 3, name: "Цезарь", desc: "Курица, салат, соус", price: 350, ingredients: ["Курица 300г", "Салат 1шт", "Соус 1шт"] }
+    ];
+    function showPage(page) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-tab'));
         
-        let totalSum = 0;
+        if(page === 'menu') {
+            document.getElementById('menu-page').classList.add('active');
+            document.getElementById('btn-menu').classList.add('active-tab');
+            document.getElementById('page-title').innerText = "Выбор блюд";
+        } else {
+            document.getElementById('cart-page').classList.add('active');
+            document.getElementById('btn-cart').classList.add('active-tab');
+            document.getElementById('page-title').innerText = "Корзина";
+        }
+    }
 
-        if (!data) {
-            listDiv.innerHTML = "<p style='text-align:center; color:#aaa;'>Список пуст</p>";
+    // Отрисовка меню
+    const recipesDiv = document.getElementById('recipes-list');
+    recipesDiv.innerHTML = recipesData.map(r => 
+        <div class="recipe-card">
+            <div class="recipe-info">
+                <h3>${r.name}</h3>
+                <p>${r.desc}</p>
+                <div style="color:var(--main); font-weight:bold; margin-top:5px;">${r.price} ₽</div>
+            </div>
+            <button class="add-btn" onclick="addToCloud(${r.id})">Выбрать</button>
+        </div>
+    ).join('');
+
+    // Добавление в облако
+    function addToCloud(recipeId) {
+        const recipe = recipesData.find(r => r.id === recipeId);
+        // Записываем каждый продукт отдельно в базу
+        recipe.ingredients.forEach(ing => {
+            db.ref("cart").push({ name: ing, price: Math.floor(recipe.price / 3) }); // Примерный расчет цены на ингредиент
+        });
+        alert(recipe.name + " добавлен в корзину!");
+    }
+
+    // Чтение корзины из облака
+    db.ref("cart").on("value", (snapshot) => {
+        const data = snapshot.val();
+        const cartDiv = document.getElementById('shopping-list');
+        const totalSpan = document.getElementById('total-price');
+        cartDiv.innerHTML = "";
+        let total = 0;
+
+        if(!data) {
+            cartDiv.innerHTML = "<p style='text-align:center'>Корзина пуста</p>";
             totalSpan.innerText = "0";
             return;
         }
 
-        for (let id in data) {
-            const r = data[id];
-            totalSum += Number(r.price || 0);
-            listDiv.innerHTML += `
-                <div class="card">
-                    <button class="del-btn" onclick="deleteRecipe('${id}')">✕</button>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:600; font-size:18px;">${r.name}</span>
-                        <span class="price-tag">${r.price} ₽</span>
-                    </div>
-                </div>`;
+        for(let id in data) {
+            total += data[id].price;
+            cartDiv.innerHTML += 
+                <div class="cart-item">
+                    <span>${data[id].name}</span>
+                    <span style="font-weight:bold">${data[id].price} ₽</span>
+                </div>;
         }
-        totalSpan.innerText = totalSum.toLocaleString();
+        totalSpan.innerText = total;
     });
 
-    function addRecipe() {
-        const name = document.getElementById("recipeName").value;
-        const price = document.getElementById("recipePrice").value;
-        if (name && price) {
-            db.ref("recipes").push({ name: name, price: Number(price) });
-            document.getElementById("recipeName").value = "";
-            document.getElementById("recipePrice").value = "";
-        }
-    }
-
-    function deleteRecipe(id) {
-        db.ref("recipes/" + id).remove();
+    function clearCart() {
+        if(confirm("Очистить весь список?")) db.ref("cart").remove();
     }
 </script>
 </body>
