@@ -3,107 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Food: Work Edition</title>
+    <title>Project Food: Final Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #46b8bc; --bg: #f4f7f6; }
         body { font-family: sans-serif; background: var(--bg); padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 450px; width: 100%; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         h1 { color: var(--primary); text-align: center; }
-        select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eee; font-size: 16px; margin: 20px 0; cursor: pointer; }
-        .info-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
-        .info-box { flex: 1; padding: 12px; background: #e0f2f1; border-radius: 10px; text-align: center; border: 1px solid var(--primary); font-weight: bold; }
-        .total-card { background: var(--primary); color: white; padding: 20px; border-radius: 15px; margin-top: 20px; text-align: center; font-size: 24px; font-weight: bold; }
+        select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eee; font-size: 16px; margin: 20px 0; }
+        .res-box { display: none; margin-top: 10px; border-top: 2px solid #f0f0f0; padding-top: 15px; }
+        .total { background: var(--primary); color: white; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 22px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🛒 Project Food</h1>
-    <select id="recipe-select">
-        <option value="" disabled selected>Соединение с базой...</option>
-    </select>
-
-    <div id="recipe-info" style="display: none;">
-        <div class="info-row">
-            <div class="info-box">⚖️ <span id="weight-val">...</span></div>
-            <div class="info-box">👥 <span id="servings-val">...</span></div>
-        </div>
-        <div id="ingredients-list"></div>
-        <div class="total-card" id="total-val">0 ₽</div>
+    <select id="sel"><option>Подключение...</option></select>
+    
+    <div id="res" class="res-box">
+        <p>⚖️ Вес: <span id="w"></span> | 👥 Порции: <span id="s"></span></p>
+        <div id="ings"></div>
+        <div class="total" id="tot">0 ₽</div>
     </div>
 </div>
 
 <script>
-    const supabaseUrl = 'https://lmchwsdguarvdigfqxku.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
-    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    // ВНИМАНИЕ: Проверь, чтобы в конце ключа не было лишних пробелов!
+    const URL = 'https://lmchwsdguarvdigfqxku.supabase.co';
+    const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
 
-    let allRecipes = [];
-    let priceMap = {};
+    const supabaseClient = supabase.createClient(URL, KEY);
 
-    async function init() {
-        const select = document.getElementById('recipe-select');
+    let recipesData = [];
+    let productPrices = {};
+
+    async function loadData() {
         try {
-            // 1. Пробуем загрузить продукты
-            const { data: products, error: pError } = await _supabase.from('products').select('*');
-            if (products) products.forEach(p => priceMap[p.name.toLowerCase()] = p.price_per_unit);
+            // Загружаем цены
+            const { data: p } = await supabaseClient.from('products').select('*');
+            if (p) p.forEach(item => productPrices[item.name.toLowerCase()] = item.price_per_unit);
 
-            // 2. Пробуем загрузить рецепты
-            const { data: recipes, error: rError } = await _supabase.from('recipes').select('*');
-            
-            if (rError) throw rError; // Если тут ошибка, идем в catch
-            
-            allRecipes = recipes || [];
-            select.innerHTML = '<option value="" disabled selected>🔍 Выберите рецепт</option>';
-            
-            if (allRecipes.length === 0) {
-                select.innerHTML = '<option disabled>База пуста! Добавь рецепты в SQL.</option>';
-                return;
-            }
+            // Загружаем рецепты
+            const { data: r, error } = await supabaseClient.from('recipes').select('*');
+            if (error) throw error;
 
-            allRecipes.forEach(r => {
+            recipesData = r || [];
+            const select = document.getElementById('sel');
+            select.innerHTML = '<option value="" disabled selected>🔍 Выберите блюдо</option>';
+            
+            recipesData.forEach(item => {
                 const opt = document.createElement('option');
-                opt.value = r.id; opt.textContent = r.title;
+                opt.value = item.id; opt.textContent = item.title;
                 select.appendChild(opt);
             });
         } catch (err) {
-            console.error("Критическая ошибка:", err);
-            select.innerHTML = `<option disabled>Ошибка: ${err.message || 'Нет связи'}</option>`;
+            console.error(err);
+            document.getElementById('sel').innerHTML = '<option>Ошибка: ' + err.message + '</option>';
         }
     }
 
-    document.getElementById('recipe-select').onchange = (e) => {
-        const recipe = allRecipes.find(r => r.id == e.target.value);
-        if (!recipe) return;
+    document.getElementById('sel').onchange = (e) => {
+        const item = recipesData.find(x => x.id == e.target.value);
+        if (!item) return;
 
-        document.getElementById('recipe-info').style.display = 'block';
-        document.getElementById('weight-val').textContent = recipe.total_weight || '0';
-        document.getElementById('servings-val').textContent = (recipe.servings || '1') + ' чел';
-        
-        const listDiv = document.getElementById('ingredients-list');
-        listDiv.innerHTML = '';
-        let totalCost = 0;
+        document.getElementById('res').style.display = 'block';
+        document.getElementById('w').textContent = item.total_weight;
+        document.getElementById('s').textContent = item.servings;
 
-        try {
-            const ings = typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : (recipe.ingredients || []);
-            ings.forEach(ing => {
-                const price = priceMap[ing.n.toLowerCase()] || 0;
-                const weightNum = parseFloat(ing.w.replace(',', '.').replace(/[^\d.]/g, '')) || 0;
-                const cost = price * weightNum;
-                totalCost += cost;
-                listDiv.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee">
-                    <span>${ing.n} (${ing.w})</span>
-                    <b>${cost.toFixed(0)} ₽</b>
-                </div>`;
-            });
-            document.getElementById('total-val').textContent = totalCost.toFixed(0) + ' ₽';
-        } catch (parseErr) {
-            listDiv.innerHTML = '<div style="color:red">Ошибка формата ингредиентов</div>';
-        }
+        let total = 0;
+        let html = '';
+        const ingredients = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
+
+        ingredients.forEach(ing => {
+            const price = productPrices[ing.n.toLowerCase()] || 0;
+            const weight = parseFloat(ing.w.replace(',', '.')) || 0;
+            const cost = price * weight;
+            total += cost;
+            html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px">
+                        <span>${ing.n}</span>
+                        <span>${cost.toFixed(0)} ₽</span>
+                    </div>`;
+        });
+
+        document.getElementById('ings').innerHTML = html;
+        document.getElementById('tot').textContent = total.toFixed(0) + ' ₽';
     };
 
-    init();
+    loadData();
 </script>
 </body>
 </html>
