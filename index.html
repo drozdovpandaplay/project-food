@@ -30,8 +30,11 @@
         try {
             const res = await fetch(U, {
                 method: 'GET',
-                mode: 'cors', // Принудительно включаем CORS в коде
-                headers: { 'apikey': K, 'Authorization': `Bearer ${K}` }
+                headers: { 
+                    'apikey': K, 
+                    'Authorization': `Bearer ${K}`,
+                    'Content-Type': 'application/json'
+                }
             });
             const data = await res.json();
             const sel = document.getElementById('s');
@@ -46,7 +49,8 @@
                 document.getElementById('w').textContent = item.total_weight;
                 document.getElementById('p').textContent = item.servings;
                 let ing = '<b>Состав:</b><br>';
-                JSON.parse(JSON.stringify(item.ingredients)).forEach(n => {
+                const ingredientsArr = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
+                ingredientsArr.forEach(n => {
                     ing += `• ${n.n}: ${n.w}<br>`;
                 });
                 document.getElementById('i').innerHTML = ing;
