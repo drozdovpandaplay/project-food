@@ -44,39 +44,4 @@
             <div class="info-box">👥 <span id="servings-val">...</span></div>
         </div>
 
-        <button id="add-to-list">Добавить в список</button>
-
-        <div id="ingredients-list"></div>
-
-        <div class="total-card">
-            <div id="kcal-val">Всего: 0 ккал</div>
-            <div class="total-price" id="total-val">0 ₽</div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const supabaseUrl = 'ТВОЙ_URL';
-    const supabaseKey = 'ТВОЙ_KEY';
-    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-    let allRecipes = [];
-    let priceMap = {};
-
-    async function init() {
-        // 1. Загружаем цены (приводим к нижнему регистру для сравнения)
-        const { data: products } = await _supabase.from('products').select('*');
-        products.forEach(p => {
-            priceMap[p.name.toLowerCase()] = p.price_per_unit;
-        });
-
-        // 2. Загружаем рецепты
-        const { data: recipes } = await _supabase.from('recipes').select('*');
-        allRecipes = recipes;
-
-        renderRecipeDropdown(recipes);
-    }
-
-    function renderRecipeDropdown(recipes) {
-        const select = document.getElementById('recipe-select');
-        select.innerHTML = '<option value="" disabled selected>🔍 Выберите блюдо...</option>';
+        <button id
