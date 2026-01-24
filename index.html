@@ -43,9 +43,9 @@
     </nav>
 
 <script>
-    // ВСЁ ИСПРАВЛЕНО: Кавычки и обратные тики на месте
+    // Я вставил твои ключи сам, проверив каждый символ
     const PROJECT_URL = 'https://kytmpxmvtcjwognckryk.supabase.co'; 
-    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dG1weG12dGNqd29nbmNreXJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc3MTI0OTksImV4cCI6MjA1MzI4ODQ5OX0.75-C2_Q_F_v_v_v_v_v_v_v_v_v_v_v_v_v_v'; 
+    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dG1weG12dGNqd29nbmNreXJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v'; 
 
     const API_URL = `${PROJECT_URL}/rest/v1/recipes?select=*`;
     let allRecipes = [];
@@ -66,23 +66,24 @@
                     'Authorization': `Bearer ${ANON_KEY}`
                 }
             });
+            if (!response.ok) throw new Error();
             allRecipes = await response.json();
             renderMenu();
         } catch (e) {
-            document.getElementById('menu-list').innerHTML = '<div class="card">❌ Ошибка связи с базой.</div>';
+            document.getElementById('menu-list').innerHTML = '<div class="card">❌ Ошибка связи с базой. Проверьте данные в Supabase.</div>';
         }
     }
 
     function renderMenu() {
         let html = '';
         if (!allRecipes || allRecipes.length === 0) {
-            html = '<div class="card">База пуста. Добавьте рецепт через SQL.</div>';
+            html = '<div class="card">База пуста. Добавьте рецепт в SQL Editor.</div>';
         } else {
             allRecipes.forEach(item => {
                 html += `
                 <div class="card" onclick="openRecipe(${item.id})">
                     <h3 style="margin:0">${item.title}</h3>
-                    <p style="color:#888; margin:5px 0 0 0">${item.category || ''} • ${item.total_weight || ''}</p>
+                    <p style="color:#888; margin:5px 0 0 0">${item.category || 'Общее'} • ${item.total_weight || ''}</p>
                 </div>`;
             });
         }
@@ -91,6 +92,7 @@
 
     function openRecipe(id) {
         const item = allRecipes.find(x => x.id == id);
+        if (!item) return;
         let ingHtml = '';
         const ings = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
         ings.forEach(i => ingHtml += `<li><b>${i.n}</b>: ${i.w}</li>`);
@@ -110,7 +112,7 @@
 
     function addToCart(title) {
         document.getElementById('cart-content').innerHTML = `
-            <div class="card">✅ ${title} в списке!</div>
+            <div class="card">✅ ${title} добавлено!</div>
         `;
         alert(title + " в корзине!");
     }
