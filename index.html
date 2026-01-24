@@ -3,80 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Food: Final Fix</title>
+    <title>Project Food: Alive</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #46b8bc; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { max-width: 450px; width: 100%; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        h1 { color: var(--primary); text-align: center; }
-        select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eee; font-size: 16px; margin: 20px 0; }
-        #res { display: none; margin-top: 15px; padding-top: 15px; border-top: 2px solid #f0f0f0; }
+        :root { --main: #46b8bc; --bg: #f0f4f4; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); width: 100%; max-width: 400px; }
+        h1 { color: var(--main); text-align: center; font-size: 24px; margin-bottom: 20px; }
+        select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eef2f2; font-size: 16px; outline: none; transition: 0.3s; }
+        select:focus { border-color: var(--main); }
+        .details { margin-top: 20px; display: none; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; color: #444; }
+        .ing-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="card">
     <h1>🛒 Project Food</h1>
-    <select id="sel"><option>Проверка связи...</option></select>
-    
-    <div id="res">
-        <p>⚖️ Вес: <span id="w"></span> | 👥 Порции: <span id="s"></span></p>
-        <div id="ings"></div>
+    <select id="recipeSelect">
+        <option>🔍 Соединение...</option>
+    </select>
+
+    <div id="recipeDetails" class="details">
+        <div class="row">
+            <span>⚖️ <span id="wVal"></span></span>
+            <span>👥 <span id="sVal"></span></span>
+        </div>
+        <div id="ingList"></div>
     </div>
 </div>
 
 <script>
-    // ПРОВЕРЬТЕ: Эти данные должны быть точно как в Supabase Settings -> API
-    const URL = 'https://lmchwsdguarvdigfqxku.supabase.co';
-    const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
+    const S_URL = 'https://lmchwsdguarvdigfqxku.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
+    
+    const client = supabase.createClient(S_URL, S_KEY);
+    let allRecipes = [];
 
-    const supabaseClient = supabase.createClient(URL, KEY);
-    let recipes = [];
-
-    async function init() {
-        const select = document.getElementById('sel');
+    async function load() {
+        const sel = document.getElementById('recipeSelect');
         try {
-            // Загружаем только рецепты для проверки
-            const { data, error } = await supabaseClient.from('recipes').select('*');
+            // Запрашиваем данные напрямую из таблицы, которую ты только что создал
+            const { data, error } = await client.from('recipes').select('*');
             
             if (error) throw error;
 
-            recipes = data || [];
-            select.innerHTML = '<option value="" disabled selected>🔍 Выберите блюдо</option>';
-            
-            if (recipes.length === 0) {
-                select.innerHTML = '<option disabled>База пуста (выполни SQL)</option>';
+            if (!data || data.length === 0) {
+                sel.innerHTML = '<option>Пусто. Добавь данные в SQL!</option>';
                 return;
             }
 
-            recipes.forEach(r => {
+            allRecipes = data;
+            sel.innerHTML = '<option value="" disabled selected>🍽️ Выберите блюдо...</option>';
+            data.forEach(r => {
                 const opt = document.createElement('option');
-                opt.value = r.id; opt.textContent = r.title;
-                select.appendChild(opt);
+                opt.value = r.id;
+                opt.textContent = r.title;
+                sel.appendChild(opt);
             });
-        } catch (err) {
-            console.error(err);
-            select.innerHTML = `<option disabled>Ошибка: ${err.message}</option>`;
-            alert("Ошибка подключения: " + err.message);
+        } catch (e) {
+            sel.innerHTML = '<option>Ошибка: ' + e.message + '</option>';
         }
     }
 
-    document.getElementById('sel').onchange = (e) => {
-        const r = recipes.find(x => x.id == e.target.value);
+    document.getElementById('recipeSelect').onchange = (e) => {
+        const r = allRecipes.find(x => x.id == e.target.value);
         if (!r) return;
 
-        document.getElementById('res').style.display = 'block';
-        document.getElementById('w').textContent = r.total_weight;
-        document.getElementById('s').textContent = r.servings;
+        document.getElementById('recipeDetails').style.display = 'block';
+        document.getElementById('wVal').textContent = r.total_weight;
+        document.getElementById('sVal').textContent = r.servings + ' чел';
         
-        let html = '';
         const ings = typeof r.ingredients === 'string' ? JSON.parse(r.ingredients) : r.ingredients;
-        ings.forEach(i => html += `<div>• ${i.n}: ${i.w}</div>`);
-        document.getElementById('ings').innerHTML = html;
+        document.getElementById('ingList').innerHTML = ings.map(i => `
+            <div class="ing-item">
+                <span>${i.n}</span>
+                <span style="color:#888">${i.w}</span>
+            </div>
+        `).join('');
     };
 
-    init();
+    load();
 </script>
 </body>
 </html>
