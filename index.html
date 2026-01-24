@@ -3,47 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food: Master Edition</title>
+    <title>Project Food: Final Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    
     <style>
         :root { --main: #46b8bc; --bg: #f4f7f6; --dark: #2d3436; --white: #ffffff; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; color: var(--dark); }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; color: var(--dark); overflow-x: hidden; }
         
-        .header { background: var(--white); padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
+        /* Шапка с поиском */
+        .header { background: var(--white); padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .search-box { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; background: #f9f9f9; font-size: 16px; outline: none; transition: 0.3s; }
+        .search-box:focus { border-color: var(--main); background: #fff; }
+
+        /* Навигация страниц */
         .page { display: none; padding: 15px; }
         .active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
-        /* Карточка блюда */
-        .recipe-card { background: var(--white); border-radius: 22px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 18px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        /* Карточки блюд */
+        .recipe-card { background: var(--white); border-radius: 22px; margin-bottom: 15px; padding: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; border: 1px solid transparent; }
         .recipe-card:active { transform: scale(0.98); border-color: var(--main); }
-        
-        .category-tag { font-size: 10px; text-transform: uppercase; color: var(--main); font-weight: 800; }
-        .recipe-meta { display: flex; gap: 8px; margin: 10px 0; font-size: 11px; font-weight: 600; }
-        .meta-item { background: #f0f3f2; padding: 4px 10px; border-radius: 12px; color: #636e72; }
+        .category-tag { font-size: 10px; text-transform: uppercase; color: var(--main); font-weight: 800; margin-bottom: 5px; }
 
-        /* Модальное окно (Страница рецепта) */
+        /* Модальное окно рецепта */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-        .modal.active { display: block; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .modal.active { display: block; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        .close-modal { background: #eee; border: none; padding: 10px 20px; border-radius: 12px; font-weight: bold; margin-bottom: 20px; }
-        .ing-list-detail { list-style: none; padding: 0; }
-        .ing-list-detail li { padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .close-modal { background: #f0f3f2; border: none; padding: 12px; border-radius: 15px; font-weight: bold; width: 100%; text-align: left; margin-bottom: 20px; color: var(--main); }
 
-        /* Навигация */
+        /* Таймер в тексте */
+        .timer-link { color: var(--main); text-decoration: underline; font-weight: bold; cursor: pointer; background: #e0f2f1; padding: 2px 6px; border-radius: 6px; }
+
+        /* Список ингредиентов и шаги */
+        .ing-line { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #eee; }
+        .step-item { display: flex; gap: 12px; margin-bottom: 15px; }
+        .step-num { background: var(--main); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+
+        /* Корзина */
+        .cart-item { background: var(--white); padding: 15px; border-radius: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--main); }
+        .btn-add { background: var(--main); color: var(--white); border: none; padding: 16px; border-radius: 16px; width: 100%; font-weight: 800; cursor: pointer; margin-top: 15px; }
+
+        /* Нижнее меню */
         .nav { position: fixed; bottom: 0; width: 100%; background: var(--white); display: flex; height: 75px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
-        .nav-btn { flex: 1; border: none; background: none; font-size: 11px; color: #b2bec3; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .nav-btn { flex: 1; border: none; background: none; font-size: 11px; color: #b2bec3; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
         .nav-btn.active-tab { color: var(--main); }
-
-        .btn-add { background: var(--main); color: var(--white); border: none; padding: 16px; border-radius: 16px; width: 100%; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2 style="margin:0; font-size: 20px; color: var(--main);">Project Food</h2>
+    <div class="header" id="main-header">
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 Найти блюдо или продукт..." oninput="renderMenu()">
     </div>
 
     <div id="menu-page" class="page active">
@@ -51,11 +62,13 @@
     </div>
 
     <div id="cart-page" class="page">
+        <h2 style="margin-top:0;">🛒 Список покупок</h2>
         <div id="cart-items"></div>
+        <button class="btn-add" style="background:#ff7675;" onclick="clearCart()">Очистить корзину</button>
     </div>
 
     <div id="recipe-modal" class="modal">
-        <button class="close-modal" onclick="closeRecipe()">← Назад к меню</button>
+        <button class="close-modal" onclick="closeRecipe()">← Назад к списку</button>
         <div id="modal-content"></div>
     </div>
 
@@ -65,6 +78,7 @@
     </nav>
 
 <script>
+    // Твой конфиг Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyCg0lFoxG721_P8tlf2fJsHiC7NsoE_EWM",
         authDomain: "foodproject-4aaf3.firebaseapp.com",
@@ -74,83 +88,62 @@
         messagingSenderId: "9549297996",
         appId: "1:9549297996:web:53af7c7e62317143c177e9"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // База рецептов (добавлена секция 'desc' для каждой страницы)
+    // База данных рецептов
     const recipes = [
         { 
-            id: 1, cat: "Завтрак", name: "Овсянка с ягодами", kcal: 320, weight: 300, basePrice: 150, 
-            desc: "Идеальный завтрак для энергии. Медленные углеводы и антиоксиданты из ягод.",
-            ings: [{n: "Овсянка", q: 100, u: "г", p: 40}, {n: "Ягоды", q: 50, u: "г", p: 80}, {n: "Молоко", q: 150, u: "мл", p: 30}] 
+            id: 1, cat: "Завтрак", name: "Овсянка с ягодами", kcal: 320, weight: 300, 
+            ings: [{n: "Овсянка", q: 100, u: "г"}, {n: "Ягоды", q: 50, u: "г"}, {n: "Молоко", q: 150, u: "мл"}],
+            steps: ["Вскипятите молоко.", "Всыпьте овсянку и варите 5 минут на медленном огне.", "Добавьте ягоды."]
         },
         { 
-            id: 2, cat: "Обед", name: "Борщ Домашний", kcal: 380, weight: 400, basePrice: 320, 
-            desc: "Традиционный наваристый борщ на говядине со свежей капустой и свеклой.",
-            ings: [{n: "Говядина", q: 150, u: "г", p: 200}, {n: "Свекла", q: 100, u: "г", p: 40}, {n: "Капуста", q: 100, u: "г", p: 40}] 
-        },
-        { 
-            id: 3, cat: "Ужин", name: "Паста Карбонара", kcal: 650, weight: 350, basePrice: 450, 
-            desc: "Итальянская классика с беконом, пармезаном и яичным желтком.",
-            ings: [{n: "Спагетти", q: 120, u: "г", p: 90}, {n: "Бекон", q: 80, u: "г", p: 160}, {n: "Сыр", q: 40, u: "г", p: 200}] 
+            id: 2, cat: "Ужин", name: "Паста Карбонара", kcal: 650, weight: 350, 
+            ings: [{n: "Спагетти", q: 120, u: "г"}, {n: "Бекон", q: 80, u: "г"}, {n: "Пармезан", q: 40, u: "г"}],
+            steps: ["Варите пасту 8 минут до готовности.", "Обжарьте бекон.", "Смешайте пасту с сыром и беконом."]
         }
     ];
 
-    let selectedPersons = {};
-
+    // Функция поиска и отрисовки меню
     function renderMenu() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
         const container = document.getElementById('recipes-container');
-        container.innerHTML = recipes.map(r => {
-            const p = selectedPersons[r.id] || 2;
-            return `
+        
+        const filtered = recipes.filter(r => r.name.toLowerCase().includes(query) || 
+            r.ings.some(i => i.n.toLowerCase().includes(query)));
+
+        container.innerHTML = filtered.map(r => `
             <div class="recipe-card" onclick="openRecipe(${r.id})">
                 <div class="category-tag">${r.cat}</div>
-                <h3 style="margin:5px 0;">${r.name}</h3>
-                <div class="recipe-meta">
-                    <span class="meta-item">🔥 ${r.kcal*p} ккал</span>
-                    <span class="meta-item">⚖️ ${r.weight*p} г</span>
-                </div>
-                <div style="font-size:12px; color:#999; margin-bottom:10px;">Нажми, чтобы посмотреть пропорции</div>
-                <div style="font-weight:900; color:var(--main); font-size:20px;">${r.basePrice*p} ₽</div>
-            </div>`;
-        }).join('');
+                <h3 style="margin:0;">${r.name}</h3>
+                <div style="font-size:12px; color:#999; margin-top:5px;">${r.kcal} ккал | ${r.weight} г</div>
+            </div>
+        `).join('');
     }
 
+    // Открытие рецепта
     function openRecipe(id) {
         const r = recipes.find(x => x.id === id);
-        const p = selectedPersons[id] || 1; // Показываем пропорции на 1 чел по умолчанию или на выбранное число
-        const modal = document.getElementById('recipe-modal');
         const content = document.getElementById('modal-content');
+        
+        const stepsHtml = r.steps.map((step, i) => {
+            const stepWithTimer = step.replace(/(\d+)\s+минут/g, (match, p1) => 
+                `<span class="timer-link" onclick="event.stopPropagation(); startTimer(${p1}, '${r.name}')">${match} ⏱️</span>`
+            );
+            return `<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${stepWithTimer}</div></div>`;
+        }).join('');
 
         content.innerHTML = `
-            <div class="category-tag">${r.cat}</div>
-            <h1 style="margin:10px 0;">${r.name}</h1>
-            <p style="color:#636e72; line-height:1.5;">${r.desc}</p>
-            
-            <h3 style="margin-top:30px;">Ингредиенты и пропорции (на ${p} чел.):</h3>
-            <ul class="ing-list-detail">
-                ${r.ings.map(ing => `
-                    <li>
-                        <span>${ing.n}</span>
-                        <span style="font-weight:bold">${(ing.q * p).toFixed(1)} ${ing.u}</span>
-                    </li>
-                `).join('')}
-            </ul>
-
-            <div style="margin-top:30px; background:#f9f9f9; padding:20px; border-radius:15px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <span>Итоговый вес:</span> <b>${r.weight * p} г</b>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span>Энерг. ценность:</span> <b>${r.kcal * p} ккал</b>
-                </div>
-            </div>
-            
-            <button class="btn-add" style="margin-top:30px;" onclick="addToCloud(${r.id}); closeRecipe();">ДОБАВИТЬ В КОРЗИНУ</button>
+            <h1>${r.name}</h1>
+            <h3>Ингредиенты:</h3>
+            ${r.ings.map(i => `<div class="ing-line"><span>${i.n}</span><b>${i.q} ${i.u}</b></div>`).join('')}
+            <h3 style="margin-top:25px;">Как готовить:</h3>
+            ${stepsHtml}
+            <button class="btn-add" onclick="addToCart(${r.id})">🛒 Добавить ингредиенты в корзину</button>
         `;
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Запрет прокрутки фона
+        document.getElementById('recipe-modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
 
     function closeRecipe() {
@@ -158,24 +151,11 @@
         document.body.style.overflow = 'auto';
     }
 
-    function addToCloud(id) {
-        const r = recipes.find(x => x.id === id);
-        const p = selectedPersons[id] || 1;
-        r.ings.forEach(ing => {
-            db.ref("cart").push({ name: ing.n, amount: (ing.q * p).toFixed(1), unit: ing.u, price: ing.p * p, dish: r.name, checked: false });
-        });
-        alert("Продукты для '" + r.name + "' добавлены в корзину!");
+    // Таймер
+    function startTimer(min, label) {
+        alert("Таймер запущен на " + min + " мин для: " + label);
     }
 
-    function showPage(p) {
-        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-tab'));
-        document.getElementById(p + '-page').classList.add('active');
-        document.getElementById('n-' + p).classList.add('active-tab');
-        closeRecipe();
-    }
-
-    renderMenu();
-</script>
-</body>
-</html>
+    // Firebase: Добавление в корзину
+    function addToCart(id) {
+        const r = recipes.find(x => x.id === id
