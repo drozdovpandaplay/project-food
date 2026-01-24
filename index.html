@@ -2,105 +2,21 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Project Food 2.0</title>
     <style>
-        :root { --main: #46b8bc; --bg: #f0f4f3; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; }
-        .page { display: none; padding: 20px; animation: fadeIn 0.3s; }
+        :root { --main: #46b8bc; --bg: #f0f4f3; --text: #333; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        
+        /* Страницы */
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
         .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #ddd; }
-        .nav-btn { background: none; border: none; font-size: 12px; color: #888; }
-        .nav-btn.active-nav { color: var(--main); font-weight: bold; }
+        h2 { color: var(--main); margin-top: 0; }
         
-        h2 { color: var(--main); }
-        .btn { background: var(--main); color: white; border: none; padding: 10px 20px; border-radius: 10px; width: 100%; font-size: 16px; }
-    </style>
-</head>
-<body>
-
-    <div id="home" class="page active">
-        <h2>🍴 Меню</h2>
-        <div id="menu-list">Загрузка блюд...</div>
-    </div>
-
-    <div id="recipe" class="page">
-        <button onclick="showPage('home')" style="margin-bottom:10px">← Назад</button>
-        <div id="recipe-content"></div>
-    </div>
-
-    <div id="cart" class="page">
-        <h2>🛒 Список покупок</h2>
-        <div id="cart-content">Ваш список пуст</div>
-    </div>
-
-    <nav class="nav">
-        <button class="nav-btn active-nav" id="n-home" onclick="showPage('home')">🏠 Главная</button>
-        <button class="nav-btn" id="n-cart" onclick="showPage('cart')">🛒 Корзина</button>
-    </nav>
-
-<script>
-    const URL = 'https://lmchwsdguarvdigfqxku.supabase.co/rest/v1/recipes?select=*';
-    const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
-    let allData = [];
-
-    // Навигация между страницами
-    function showPage(pageId) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav'));
-        document.getElementById(pageId).classList.add('active');
-        document.getElementById('n-' + (pageId === 'recipe' ? 'home' : pageId)).classList.add('active-nav');
-    }
-
-    // Загрузка данных
-    async function init() {
-        try {
-            const r = await fetch(URL, { headers: { 'apikey': KEY, 'Authorization': `Bearer ${KEY}` } });
-            allData = await r.json();
-            renderMenu();
-        } catch (e) {
-            document.getElementById('menu-list').innerHTML = "Ошибка связи с базой";
-        }
-    }
-
-    function renderMenu() {
-        let html = '';
-        allData.forEach(item => {
-            html += `<div class="card" onclick="openRecipe(${item.id})">
-                <h3>${item.title}</h3>
-                <small>${item.category} • ${item.total_weight}</small>
-            </div>`;
-        });
-        document.getElementById('menu-list').innerHTML = html;
-    }
-
-    function openRecipe(id) {
-        const item = allData.find(x => x.id == id);
-        let ingHtml = '';
-        const ings = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
-        ings.forEach(i => ingHtml += `<li>${i.n}: ${i.w}</li>`);
-        
-        document.getElementById('recipe-content').innerHTML = `
-            <h2>${item.title}</h2>
-            <div class="card">
-                <p><b>Порций:</b> ${item.servings}</p>
-                <p><b>Вес:</b> ${item.total_weight}</p>
-                <ul>${ingHtml}</ul>
-                <button class="btn" onclick="addToCart('${item.title}')">Добавить в корзину</button>
-            </div>
-        `;
-        showPage('recipe');
-    }
-
-    function addToCart(name) {
-        alert(name + " добавлен в корзину!");
-        document.getElementById('cart-content').innerHTML = `<div class="card">${name}</div>`;
-    }
-
-    init();
-</script>
-</body>
-</html>
+        /* Карточки */
+        .card { background: white; padding: 18px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.2s; }
+        .card:active { transform: scale(0.98); }
+        .card h3 { margin: 0 0 5px 0; font-size: 18px; }
+        .card small { color: #888; display: block; margin
