@@ -19,4 +19,163 @@
         .card { background: white; padding: 18px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.2s; }
         .card:active { transform: scale(0.98); }
         .card h3 { margin: 0 0 5px 0; font-size: 18px; }
-        .card small { color: #888; display: block; margin
+        .card small { color: #888; display: block; margin-bottom: 10px; }
+        
+        /* Кнопки */
+        .btn { background: var(--main); color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .back-btn { background: none; border: none; color: var(--main); font-size: 16px; padding: 0; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; }
+
+        /* Навигация */
+        .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #eee; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .nav-btn { background: none; border: none; font-size: 11px; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .nav-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        .nav-btn.active-nav { color: var(--main); }
+
+        /* Список ингредиентов */
+        ul { padding-left: 20px; margin: 15px 0; }
+        li { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+    <div id="home" class="page active">
+        <h2>🍴 Меню рецептов</h2>
+        <div id="menu-list">
+            <div style="text-align: center; padding: 50px;">Загрузка блюд...</div>
+        </div>
+    </div>
+
+    <div id="recipe" class="page">
+        <button class="back-btn" onclick="showPage('home')">← Назад к меню</button>
+        <div id="recipe-content"></div>
+    </div>
+
+    <div id="cart" class="page">
+        <h2>🛒 Список покупок</h2>
+        <div id="cart-content">
+            <div class="card" style="text-align: center; color: #888;">Ваш список пуст</div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <button class="nav-btn active-nav" id="n-home" onclick="showPage('home')">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            Главная
+        </button>
+        <button class="nav-btn" id="n-cart" onclick="showPage('cart')">
+            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            Корзина
+        </button>
+    </nav>
+
+<script>
+    const URL = 'https://lmchwsdguarvdigfqxku.supabase.co/rest/v1/recipes?select=*';
+    const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
+    
+    let allData = [];
+    let cart = [];
+
+    // Навигация
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav'));
+        
+        document.getElementById(pageId).classList.add('active');
+        
+        // Подсветка кнопок в меню
+        const activeNavId = (pageId === 'recipe') ? 'n-home' : 'n-' + pageId;
+        document.getElementById(activeNavId).classList.add('active-nav');
+        window.scrollTo(0,0);
+    }
+
+    // Загрузка данных
+    async function init() {
+        try {
+            const r = await fetch(URL, { 
+                headers: { 'apikey': KEY, 'Authorization': `Bearer ${KEY}` } 
+            });
+            if (!r.ok) throw new Error();
+            allData = await r.json();
+            renderMenu();
+        } catch (e) {
+            document.getElementById('menu-list').innerHTML = `
+                <div class="card" style="text-align:center;">
+                    <p>⚠️ Ошибка связи с базой.</p>
+                    <button class="btn" onclick="location.reload()">Обновить</button>
+                </div>`;
+        }
+    }
+
+    function renderMenu() {
+        let html = '';
+        if (allData.length === 0) {
+            html = '<div class="card">В меню пока пусто. Добавьте рецепты через SQL Editor.</div>';
+        } else {
+            allData.forEach(item => {
+                html += `
+                <div class="card" onclick="openRecipe(${item.id})">
+                    <h3>${item.title}</h3>
+                    <small>📂 ${item.category || 'Общее'} • ⚖️ ${item.total_weight || 'Не указан'}</small>
+                    <div style="color: var(--main); font-weight: bold; font-size: 14px;">Посмотреть рецепт →</div>
+                </div>`;
+            });
+        }
+        document.getElementById('menu-list').innerHTML = html;
+    }
+
+    function openRecipe(id) {
+        const item = allData.find(x => x.id == id);
+        if (!item) return;
+
+        let ingHtml = '';
+        const ings = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
+        ings.forEach(i => ingHtml += `<li><b>${i.n}</b> — ${i.w}</li>`);
+        
+        document.getElementById('recipe-content').innerHTML = `
+            <h2>${item.title}</h2>
+            <div class="card">
+                <p>👤 <b>Порций:</b> ${item.servings || '1'}</p>
+                <p>⚖️ <b>Общий вес:</b> ${item.total_weight || 'Не указан'}</p>
+                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+                <h4>Ингредиенты:</h4>
+                <ul>${ingHtml}</ul>
+                <button class="btn" onclick="addToCart('${item.title}')">🛒 Добавить в список покупок</button>
+            </div>
+        `;
+        showPage('recipe');
+    }
+
+    function addToCart(name) {
+        if (!cart.includes(name)) {
+            cart.push(name);
+            updateCartUI();
+        }
+        alert("Добавлено в корзину!");
+    }
+
+    function updateCartUI() {
+        const container = document.getElementById('cart-content');
+        if (cart.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align: center; color: #888;">Ваш список пуст</div>';
+            return;
+        }
+        let html = '';
+        cart.forEach((item, index) => {
+            html += `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>✅ ${item}</span>
+                <button onclick="removeFromCart(${index})" style="background:none; border:none; color:red;">❌</button>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        updateCartUI();
+    }
+
+    init();
+</script>
+</body>
+</html>
