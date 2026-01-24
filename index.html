@@ -3,89 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Food: Alive</title>
+    <title>Project Food: FIXED</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --main: #46b8bc; --bg: #f0f4f4; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); width: 100%; max-width: 400px; }
-        h1 { color: var(--main); text-align: center; font-size: 24px; margin-bottom: 20px; }
-        select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eef2f2; font-size: 16px; outline: none; transition: 0.3s; }
-        select:focus { border-color: var(--main); }
-        .details { margin-top: 20px; display: none; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; color: #444; }
-        .ing-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; display: flex; justify-content: space-between; }
+        body { font-family: sans-serif; background: #f0f4f4; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        select { width: 100%; padding: 15px; border-radius: 10px; border: 2px solid #eee; margin: 20px 0; }
+        .res { display: none; text-align: left; background: #e0f2f1; padding: 15px; border-radius: 10px; }
     </style>
 </head>
 <body>
-
-<div class="card">
-    <h1>🛒 Project Food</h1>
-    <select id="recipeSelect">
-        <option>🔍 Соединение...</option>
-    </select>
-
-    <div id="recipeDetails" class="details">
-        <div class="row">
-            <span>⚖️ <span id="wVal"></span></span>
-            <span>👥 <span id="sVal"></span></span>
+    <div class="card">
+        <h2 style="color:#46b8bc">🛒 Project Food</h2>
+        <select id="s"><option>Загрузка...</option></select>
+        <div id="r" class="res">
+            <p><b>Вес:</b> <span id="w"></span></p>
+            <div id="i"></div>
         </div>
-        <div id="ingList"></div>
+        <p id="err" style="color:red; font-size:12px; margin-top:10px"></p>
     </div>
-</div>
 
 <script>
-    const S_URL = 'https://lmchwsdguarvdigfqxku.supabase.co';
-    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
+    const U = 'https://lmchwsdguarvdigfqxku.supabase.co';
+    const K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
     
-    const client = supabase.createClient(S_URL, S_KEY);
-    let allRecipes = [];
+    // Создаем клиент с явными настройками
+    const supabaseClient = supabase.createClient(U, K, {
+        auth: { persistSession: false }
+    });
 
-    async function load() {
-        const sel = document.getElementById('recipeSelect');
+    async function main() {
         try {
-            // Запрашиваем данные напрямую из таблицы, которую ты только что создал
-            const { data, error } = await client.from('recipes').select('*');
-            
+            const { data, error } = await supabaseClient.from('recipes').select('*');
             if (error) throw error;
 
+            const sel = document.getElementById('s');
             if (!data || data.length === 0) {
-                sel.innerHTML = '<option>Пусто. Добавь данные в SQL!</option>';
+                sel.innerHTML = '<option>База пуста</option>';
                 return;
             }
 
-            allRecipes = data;
-            sel.innerHTML = '<option value="" disabled selected>🍽️ Выберите блюдо...</option>';
-            data.forEach(r => {
-                const opt = document.createElement('option');
-                opt.value = r.id;
-                opt.textContent = r.title;
-                sel.appendChild(opt);
+            sel.innerHTML = '<option value="" selected disabled>Выбрать рецепт</option>';
+            data.forEach(x => {
+                const o = document.createElement('option');
+                o.value = x.id; o.textContent = x.title;
+                sel.appendChild(o);
             });
+
+            sel.onchange = (e) => {
+                const item = data.find(x => x.id == e.target.value);
+                document.getElementById('r').style.display = 'block';
+                document.getElementById('w').textContent = item.total_weight;
+                const ings = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
+                document.getElementById('i').innerHTML = ings.map(n => `<div>• ${n.n}: ${n.w}</div>`).join('');
+            };
         } catch (e) {
-            sel.innerHTML = '<option>Ошибка: ' + e.message + '</option>';
+            document.getElementById('err').textContent = "Ошибка связи. Попробуй обновить страницу.";
+            console.error(e);
         }
     }
-
-    document.getElementById('recipeSelect').onchange = (e) => {
-        const r = allRecipes.find(x => x.id == e.target.value);
-        if (!r) return;
-
-        document.getElementById('recipeDetails').style.display = 'block';
-        document.getElementById('wVal').textContent = r.total_weight;
-        document.getElementById('sVal').textContent = r.servings + ' чел';
-        
-        const ings = typeof r.ingredients === 'string' ? JSON.parse(r.ingredients) : r.ingredients;
-        document.getElementById('ingList').innerHTML = ings.map(i => `
-            <div class="ing-item">
-                <span>${i.n}</span>
-                <span style="color:#888">${i.w}</span>
-            </div>
-        `).join('');
-    };
-
-    load();
+    main();
 </script>
 </body>
 </html>
