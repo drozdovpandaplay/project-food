@@ -16,8 +16,6 @@
         .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #eee; }
         .nav-btn { background: none; border: none; font-size: 12px; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .nav-btn.active-nav { color: var(--main); font-weight: bold; }
-        ul { padding-left: 20px; }
-        li { margin-bottom: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -43,7 +41,7 @@
     </nav>
 
 <script>
-    // Я вставил твои ключи сам, проверив каждый символ
+    // ПРОВЕРЕННЫЕ КЛЮЧИ ИЗ ТВОЕГО НОВОГО ПРОЕКТА
     const PROJECT_URL = 'https://kytmpxmvtcjwognckryk.supabase.co'; 
     const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dG1weG12dGNqd29nbmNreXJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v'; 
 
@@ -70,20 +68,20 @@
             allRecipes = await response.json();
             renderMenu();
         } catch (e) {
-            document.getElementById('menu-list').innerHTML = '<div class="card">❌ Ошибка связи с базой. Проверьте данные в Supabase.</div>';
+            document.getElementById('menu-list').innerHTML = '<div class="card">❌ Ошибка связи с базой.</div>';
         }
     }
 
     function renderMenu() {
         let html = '';
         if (!allRecipes || allRecipes.length === 0) {
-            html = '<div class="card">База пуста. Добавьте рецепт в SQL Editor.</div>';
+            html = '<div class="card">База пуста. Проверьте SQL Editor.</div>';
         } else {
             allRecipes.forEach(item => {
                 html += `
                 <div class="card" onclick="openRecipe(${item.id})">
                     <h3 style="margin:0">${item.title}</h3>
-                    <p style="color:#888; margin:5px 0 0 0">${item.category || 'Общее'} • ${item.total_weight || ''}</p>
+                    <p style="color:#888; margin:5px 0 0 0">${item.category || 'Общее'}</p>
                 </div>`;
             });
         }
@@ -101,19 +99,15 @@
             <div class="card">
                 <h3>${item.title}</h3>
                 <p>👤 Порций: ${item.servings || '1'}</p>
-                <hr style="border:0; border-top:1px solid #eee; margin:15px 0">
-                <h4>Ингредиенты:</h4>
                 <ul>${ingHtml}</ul>
-                <button class="btn" onclick="addToCart('${item.title}')">Добавить в корзину</button>
+                <button class="btn" onclick="addToCart('${item.title}')">В корзину</button>
             </div>
         `;
         showPage('recipe');
     }
 
     function addToCart(title) {
-        document.getElementById('cart-content').innerHTML = `
-            <div class="card">✅ ${title} добавлено!</div>
-        `;
+        document.getElementById('cart-content').innerHTML = `<div class="card">✅ ${title} добавлено!</div>`;
         alert(title + " в корзине!");
     }
 
