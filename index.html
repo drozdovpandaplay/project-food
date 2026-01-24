@@ -7,15 +7,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #46b8bc; --accent: #ff9800; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 500px; width: 100%; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        h1 { color: var(--primary); text-align: center; margin-bottom: 20px; }
-        select, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 2px solid #eee; font-size: 16px; outline: none; }
+        h1 { color: var(--primary); text-align: center; }
+        select, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 2px solid #eee; font-size: 16px; }
         optgroup { font-weight: bold; color: var(--primary); background: #f9f9f9; }
-        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; }
         .info-row { display: flex; justify-content: space-between; gap: 10px; margin: 15px 0; }
-        .info-box { flex: 1; padding: 10px; background: #e0f2f1; border-radius: 10px; text-align: center; border: 2px solid var(--primary); font-weight: bold; }
-        .ingredient-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; }
+        .info-box { flex: 1; padding: 10px; background: #e0f2f1; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid var(--primary); }
+        .ingredient-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
         .price-tag { font-weight: bold; color: #2e7d32; }
         .total-card { background: var(--primary); color: white; padding: 20px; border-radius: 15px; margin-top: 20px; text-align: center; }
         .total-price { font-size: 32px; font-weight: bold; }
@@ -35,33 +35,31 @@
             <div class="info-box">⚖️ <span id="weight-val">...</span></div>
             <div class="info-box">👥 <span id="servings-val">...</span></div>
         </div>
-        <button id="add-to-list">Добавить в список</button>
         <div id="ingredients-list"></div>
         <div class="total-card">
-            <div id="kcal-val">Всего: 0 ккал</div>
             <div class="total-price" id="total-val">0 ₽</div>
         </div>
     </div>
 </div>
 
 <script>
-    // Твои данные из проекта drozdovpandaplay
-    const supabaseUrl = 'https://lmchwsdguarvdigfqxku.supabase.co'; 
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v'; 
-    
-    // ПРИМЕЧАНИЕ: Если ключ выше не работает, замени его на свой Anon Key из Supabase Settings -> API.
-    
+    // Твои ключи из проекта drozdovpandaplay
+    const supabaseUrl = 'https://lmchwsdguarvdigfqxku.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
+
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
     let allRecipes = [];
     let priceMap = {};
 
     async function init() {
         try {
+            // Загружаем цены
             const { data: products } = await _supabase.from('products').select('*');
             if (products) {
                 products.forEach(p => { priceMap[p.name.toLowerCase()] = p.price_per_unit; });
             }
 
+            // Загружаем рецепты
             const { data: recipes, error } = await _supabase.from('recipes').select('*');
             if (error) throw error;
             
@@ -78,19 +76,18 @@
         select.innerHTML = '<option value="" disabled selected>🔍 Выберите блюдо...</option>';
 
         const categories = recipes.reduce((acc, r) => {
-            const cat = r.category || 'Прочее';
+            const cat = r.category || 'Другое';
             if (!acc[cat]) acc[cat] = [];
             acc[cat].push(r);
             return acc;
         }, {});
 
-        const order = ['Завтраки', 'Супы', 'Вторые блюда', 'Гарниры', 'Салаты', 'Прочее'];
+        const order = ['Завтраки', 'Супы', 'Вторые блюда', 'Гарниры', 'Салаты', 'Другое'];
 
         order.forEach(catName => {
-            if (categories[catName] && categories[catName].length > 0) {
+            if (categories[catName]) {
                 const group = document.createElement('optgroup');
                 group.label = catName.toUpperCase();
-                
                 categories[catName].sort((a,b) => a.title.localeCompare(b.title)).forEach(r => {
                     const opt = document.createElement('option');
                     opt.value = r.id;
@@ -124,8 +121,8 @@
 
                 listDiv.innerHTML += `
                     <div class="ingredient-item">
-                        <div><strong>${ing.n}</strong><br><small>${ing.w}</small></div>
-                        <div class="price-tag">${cost.toFixed(0)} ₽</div>
+                        <span><strong>${ing.n}</strong> (${ing.w})</span>
+                        <span class="price-tag">${cost.toFixed(0)} ₽</span>
                     </div>`;
             });
             document.getElementById('total-val').textContent = `${total.toFixed(0)} ₽`;
