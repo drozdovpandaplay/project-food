@@ -11,86 +11,72 @@
         .container { max-width: 450px; width: 100%; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         h1 { color: var(--primary); text-align: center; }
         select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eee; font-size: 16px; margin: 20px 0; }
-        .res-box { display: none; margin-top: 10px; border-top: 2px solid #f0f0f0; padding-top: 15px; }
-        .total { background: var(--primary); color: white; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 22px; margin-top: 15px; }
+        #res { display: none; margin-top: 15px; padding-top: 15px; border-top: 2px solid #f0f0f0; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🛒 Project Food</h1>
-    <select id="sel"><option>Подключение...</option></select>
+    <select id="sel"><option>Проверка связи...</option></select>
     
-    <div id="res" class="res-box">
+    <div id="res">
         <p>⚖️ Вес: <span id="w"></span> | 👥 Порции: <span id="s"></span></p>
         <div id="ings"></div>
-        <div class="total" id="tot">0 ₽</div>
     </div>
 </div>
 
 <script>
-    // ВНИМАНИЕ: Проверь, чтобы в конце ключа не было лишних пробелов!
+    // ПРОВЕРЬТЕ: Эти данные должны быть точно как в Supabase Settings -> API
     const URL = 'https://lmchwsdguarvdigfqxku.supabase.co';
     const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
 
     const supabaseClient = supabase.createClient(URL, KEY);
+    let recipes = [];
 
-    let recipesData = [];
-    let productPrices = {};
-
-    async function loadData() {
+    async function init() {
+        const select = document.getElementById('sel');
         try {
-            // Загружаем цены
-            const { data: p } = await supabaseClient.from('products').select('*');
-            if (p) p.forEach(item => productPrices[item.name.toLowerCase()] = item.price_per_unit);
-
-            // Загружаем рецепты
-            const { data: r, error } = await supabaseClient.from('recipes').select('*');
+            // Загружаем только рецепты для проверки
+            const { data, error } = await supabaseClient.from('recipes').select('*');
+            
             if (error) throw error;
 
-            recipesData = r || [];
-            const select = document.getElementById('sel');
+            recipes = data || [];
             select.innerHTML = '<option value="" disabled selected>🔍 Выберите блюдо</option>';
             
-            recipesData.forEach(item => {
+            if (recipes.length === 0) {
+                select.innerHTML = '<option disabled>База пуста (выполни SQL)</option>';
+                return;
+            }
+
+            recipes.forEach(r => {
                 const opt = document.createElement('option');
-                opt.value = item.id; opt.textContent = item.title;
+                opt.value = r.id; opt.textContent = r.title;
                 select.appendChild(opt);
             });
         } catch (err) {
             console.error(err);
-            document.getElementById('sel').innerHTML = '<option>Ошибка: ' + err.message + '</option>';
+            select.innerHTML = `<option disabled>Ошибка: ${err.message}</option>`;
+            alert("Ошибка подключения: " + err.message);
         }
     }
 
     document.getElementById('sel').onchange = (e) => {
-        const item = recipesData.find(x => x.id == e.target.value);
-        if (!item) return;
+        const r = recipes.find(x => x.id == e.target.value);
+        if (!r) return;
 
         document.getElementById('res').style.display = 'block';
-        document.getElementById('w').textContent = item.total_weight;
-        document.getElementById('s').textContent = item.servings;
-
-        let total = 0;
+        document.getElementById('w').textContent = r.total_weight;
+        document.getElementById('s').textContent = r.servings;
+        
         let html = '';
-        const ingredients = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
-
-        ingredients.forEach(ing => {
-            const price = productPrices[ing.n.toLowerCase()] || 0;
-            const weight = parseFloat(ing.w.replace(',', '.')) || 0;
-            const cost = price * weight;
-            total += cost;
-            html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px">
-                        <span>${ing.n}</span>
-                        <span>${cost.toFixed(0)} ₽</span>
-                    </div>`;
-        });
-
+        const ings = typeof r.ingredients === 'string' ? JSON.parse(r.ingredients) : r.ingredients;
+        ings.forEach(i => html += `<div>• ${i.n}: ${i.w}</div>`);
         document.getElementById('ings').innerHTML = html;
-        document.getElementById('tot').textContent = total.toFixed(0) + ' ₽';
     };
 
-    loadData();
+    init();
 </script>
 </body>
 </html>
