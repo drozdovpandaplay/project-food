@@ -2,62 +2,60 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Food 2.0</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f4f3; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 380px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); text-align: center; }
-        h2 { color: #46b8bc; margin-bottom: 20px; }
-        select { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; background: #fff; outline: none; }
-        .res-box { display: none; margin-top: 20px; text-align: left; padding-top: 20px; border-top: 1px solid #eee; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; }
-        .ing { background: #f9f9f9; padding: 10px; border-radius: 10px; margin-top: 10px; }
+        body { font-family: -apple-system, sans-serif; background: #f0f4f3; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #46b8bc; text-align: center; }
+        select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; margin-top: 10px; }
+        .res { display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🛒 Project Food</h2>
-        <select id="main-select"><option>Загрузка меню...</option></select>
-        <div id="info" class="res-box">
-            <div class="row"><b>Общий вес:</b> <span id="v-weight"></span></div>
-            <div class="row"><b>Порций:</b> <span id="v-serv"></span></div>
-            <div id="v-ing" class="ing"></div>
+        <h2>🍽 Project Food</h2>
+        <select id="s"><option>Загрузка...</option></select>
+        <div id="r" class="res">
+            <p><b>Вес:</b> <span id="w"></span> | <b>Порций:</b> <span id="p"></span></p>
+            <div id="i"></div>
         </div>
     </div>
 
 <script>
-    const API_URL = 'https://lmchwsdguarvdigfqxku.supabase.co/rest/v1/recipes?select=*';
-    const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
+    const U = 'https://lmchwsdguarvdigfqxku.supabase.co/rest/v1/recipes?select=*';
+    const K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtY2h3c2RndWFydmRpZ2ZxeGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczMzI5NzUsImV4cCI6MjA1Mjk0ODk3NX0.3-vG_YF-L3kX-eBv-V-v-v-v-v-v-v-v-v-v-v-v';
 
-    async function init() {
+    async function load() {
         try {
-            const r = await fetch(API_URL, { headers: { 'apikey': API_KEY, 'Authorization': `Bearer ${API_KEY}` } });
-            const data = await r.json();
-            const sel = document.getElementById('main-select');
-            
-            sel.innerHTML = '<option value="" selected disabled>🍽️ Выберите блюдо</option>';
-            data.forEach(d => {
-                let opt = document.createElement('option');
-                opt.value = d.id;
-                opt.textContent = d.title;
-                sel.appendChild(opt);
+            const res = await fetch(U, {
+                method: 'GET',
+                mode: 'cors', // Принудительно включаем CORS в коде
+                headers: { 'apikey': K, 'Authorization': `Bearer ${K}` }
             });
-
+            const data = await res.json();
+            const sel = document.getElementById('s');
+            sel.innerHTML = '<option value="" disabled selected>Выберите блюдо</option>';
+            data.forEach(d => {
+                let o = document.createElement('option');
+                o.value = d.id; o.textContent = d.title; sel.appendChild(o);
+            });
             sel.onchange = () => {
                 const item = data.find(x => x.id == sel.value);
-                document.getElementById('info').style.display = 'block';
-                document.getElementById('v-weight').textContent = item.total_weight;
-                document.getElementById('v-serv').textContent = item.servings;
-                
-                let ings = '<b>Ингредиенты:</b><br>';
-                JSON.parse(item.ingredients).forEach(i => ings += `• ${i.n}: ${i.w}<br>`);
-                document.getElementById('v-ing').innerHTML = ings;
+                document.getElementById('r').style.display = 'block';
+                document.getElementById('w').textContent = item.total_weight;
+                document.getElementById('p').textContent = item.servings;
+                let ing = '<b>Состав:</b><br>';
+                JSON.parse(JSON.stringify(item.ingredients)).forEach(n => {
+                    ing += `• ${n.n}: ${n.w}<br>`;
+                });
+                document.getElementById('i').innerHTML = ing;
             };
-        } catch (e) {
-            document.getElementById('main-select').innerHTML = '<option>Ошибка: ' + e.message + '</option>';
+        } catch (err) {
+            document.getElementById('s').innerHTML = '<option>Ошибка: ' + err.message + '</option>';
         }
     }
-    init();
+    load();
 </script>
 </body>
 </html>
