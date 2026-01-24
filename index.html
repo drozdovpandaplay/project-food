@@ -3,35 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food Dynamic</title>
+    <title>Project Food: Бюджет</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        :root { --main: #46b8bc; --bg: #f0f4f3; --text: #333; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px 20px 100px 20px; }
-        h2 { color: var(--main); text-align: center; }
-        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: relative; }
-        .price-tag { background: #eef8f8; color: var(--main); padding: 5px 10px; border-radius: 8px; font-weight: bold; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        .btn { background: var(--main); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; }
-        .del-btn { position: absolute; top: 10px; right: 10px; color: #ff6b6b; border: none; background: none; font-size: 18px; }
+        :root { --main: #46b8bc; --bg: #f0f4f3; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px 20px 100px 20px; }
+        
+        /* Виджет итоговой суммы */
+        .total-banner { 
+            background: var(--main); color: white; padding: 20px; 
+            border-radius: 20px; text-align: center; margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(70, 184, 188, 0.3);
+        }
+        .total-amount { font-size: 32px; font-weight: bold; }
+
+        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; border: 1px solid rgba(0,0,0,0.03); }
+        .price-tag { background: #eef8f8; color: var(--main); padding: 5px 12px; border-radius: 10px; font-weight: bold; }
+        
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
+        .btn { background: var(--main); color: white; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .del-btn { position: absolute; top: 12px; right: 12px; color: #ff6b6b; border: none; background: none; font-size: 20px; }
+        h3 { margin-top: 0; color: #555; }
     </style>
 </head>
 <body>
 
-    <h2>🍴 Облачное Меню</h2>
+    <div class="total-banner">
+        <div style="opacity: 0.9; font-size: 14px; margin-bottom: 5px;">ОБЩАЯ СУММА:</div>
+        <div class="total-amount"><span id="total-price">0</span> ₽</div>
+    </div>
 
-    <div id="recipe-list"><p style="text-align:center">Загрузка данных...</p></div>
+    <div id="recipe-list"></div>
 
-    <div class="card" style="margin-top: 30px; border: 2px dashed var(--main);">
-        <h3 style="margin-top:0">➕ Добавить блюдо</h3>
-        <input type="text" id="recipeName" placeholder="Название (н-р: Плов)">
+    <div class="card" style="margin-top: 30px; border: 2px dashed var(--main); background: #f9ffff;">
+        <h3>➕ Добавить в список</h3>
+        <input type="text" id="recipeName" placeholder="Продукт или блюдо">
         <input type="number" id="recipePrice" placeholder="Цена (₽)">
-        <button class="btn" onclick="addRecipe()">Сохранить в облако</button>
+        <button class="btn" onclick="addRecipe()">Внести в базу</button>
     </div>
 
 <script>
-    // ТВОИ ДАННЫЕ FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyCg0lFoxG721_P8tlf2fJsHiC7NsoE_EWM",
         authDomain: "foodproject-4aaf3.firebaseapp.com",
@@ -43,35 +55,38 @@
         measurementId: "G-Q60BGELEV2"
     };
 
-    // Инициализация
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Чтение данных (Realtime)
     db.ref("recipes").on("value", (snapshot) => {
         const data = snapshot.val();
         const listDiv = document.getElementById("recipe-list");
+        const totalSpan = document.getElementById("total-price");
         listDiv.innerHTML = "";
         
+        let totalSum = 0;
+
         if (!data) {
-            listDiv.innerHTML = "<p style='text-align:center'>База пока пуста.</p>";
+            listDiv.innerHTML = "<p style='text-align:center; color:#aaa;'>Список пуст</p>";
+            totalSpan.innerText = "0";
             return;
         }
 
         for (let id in data) {
             const r = data[id];
+            totalSum += Number(r.price || 0);
             listDiv.innerHTML += `
                 <div class="card">
                     <button class="del-btn" onclick="deleteRecipe('${id}')">✕</button>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <strong>${r.name}</strong>
+                        <span style="font-weight:600; font-size:18px;">${r.name}</span>
                         <span class="price-tag">${r.price} ₽</span>
                     </div>
                 </div>`;
         }
+        totalSpan.innerText = totalSum.toLocaleString();
     });
 
-    // Добавление
     function addRecipe() {
         const name = document.getElementById("recipeName").value;
         const price = document.getElementById("recipePrice").value;
@@ -79,16 +94,11 @@
             db.ref("recipes").push({ name: name, price: Number(price) });
             document.getElementById("recipeName").value = "";
             document.getElementById("recipePrice").value = "";
-        } else {
-            alert("Заполните название и цену!");
         }
     }
 
-    // Удаление
     function deleteRecipe(id) {
-        if(confirm("Удалить блюдо?")) {
-            db.ref("recipes/" + id).remove();
-        }
+        db.ref("recipes/" + id).remove();
     }
 </script>
 </body>
