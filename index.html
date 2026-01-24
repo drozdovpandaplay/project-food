@@ -1,10 +1,89 @@
-} else {
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Project Food 2.0</title>
+    <style>
+        :root { --main: #46b8bc; --bg: #f0f4f3; --text: #333; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+        .active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        h2 { color: var(--main); text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .btn { background: var(--main); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #eee; }
+        .nav-btn { background: none; border: none; font-size: 12px; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .nav-btn.active-nav { color: var(--main); font-weight: bold; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <div id="home" class="page active">
+        <h2>🍴 Project Food</h2>
+        <div id="menu-list"><p style="text-align:center">Загрузка рецептов...</p></div>
+    </div>
+
+    <div id="recipe" class="page">
+        <button onclick="showPage('home')" style="background:none; border:none; color:var(--main); font-size:18px; margin-bottom:20px;">← К меню</button>
+        <div id="recipe-content"></div>
+    </div>
+
+    <div id="cart" class="page">
+        <h2>🛒 Корзина</h2>
+        <div id="cart-content" style="text-align:center; color:#888; margin-top:50px;">Ваш список пуст</div>
+    </div>
+
+    <nav class="nav">
+        <button class="nav-btn active-nav" id="n-home" onclick="showPage('home')">🏠 Главная</button>
+        <button class="nav-btn" id="n-cart" onclick="showPage('cart')">🛒 Корзина</button>
+    </nav>
+
+<script>
+    // ВСЁ ИСПРАВЛЕНО: Кавычки и обратные тики на месте
+    const PROJECT_URL = 'https://kytmpxmvtcjwognckryk.supabase.co'; 
+    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dG1weG12dGNqd29nbmNreXJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc3MTI0OTksImV4cCI6MjA1MzI4ODQ5OX0.75-C2_Q_F_v_v_v_v_v_v_v_v_v_v_v_v_v_v'; 
+
+    const API_URL = `${PROJECT_URL}/rest/v1/recipes?select=*`;
+    let allRecipes = [];
+
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav'));
+        document.getElementById(pageId).classList.add('active');
+        document.getElementById('n-' + (pageId === 'recipe' ? 'home' : pageId)).classList.add('active-nav');
+        window.scrollTo(0,0);
+    }
+
+    async function loadData() {
+        try {
+            const response = await fetch(API_URL, {
+                headers: { 
+                    'apikey': ANON_KEY, 
+                    'Authorization': `Bearer ${ANON_KEY}`
+                }
+            });
+            allRecipes = await response.json();
+            renderMenu();
+        } catch (e) {
+            document.getElementById('menu-list').innerHTML = '<div class="card">❌ Ошибка связи с базой.</div>';
+        }
+    }
+
+    function renderMenu() {
+        let html = '';
+        if (!allRecipes || allRecipes.length === 0) {
+            html = '<div class="card">База пуста. Добавьте рецепт через SQL.</div>';
+        } else {
             allRecipes.forEach(item => {
-                html += 
+                html += `
                 <div class="card" onclick="openRecipe(${item.id})">
                     <h3 style="margin:0">${item.title}</h3>
                     <p style="color:#888; margin:5px 0 0 0">${item.category || ''} • ${item.total_weight || ''}</p>
-                </div>;
+                </div>`;
             });
         }
         document.getElementById('menu-list').innerHTML = html;
@@ -14,9 +93,9 @@
         const item = allRecipes.find(x => x.id == id);
         let ingHtml = '';
         const ings = typeof item.ingredients === 'string' ? JSON.parse(item.ingredients) : item.ingredients;
-        ings.forEach(i => ingHtml += <li><b>${i.n}</b>: ${i.w}</li>);
+        ings.forEach(i => ingHtml += `<li><b>${i.n}</b>: ${i.w}</li>`);
 
-        document.getElementById('recipe-content').innerHTML = 
+        document.getElementById('recipe-content').innerHTML = `
             <div class="card">
                 <h3>${item.title}</h3>
                 <p>👤 Порций: ${item.servings || '1'}</p>
@@ -25,14 +104,14 @@
                 <ul>${ingHtml}</ul>
                 <button class="btn" onclick="addToCart('${item.title}')">Добавить в корзину</button>
             </div>
-        ;
+        `;
         showPage('recipe');
     }
 
     function addToCart(title) {
-        document.getElementById('cart-content').innerHTML = 
-            <div class="card" style="color: #333">✅ ${title} добавлено в список!</div>
-        ;
+        document.getElementById('cart-content').innerHTML = `
+            <div class="card">✅ ${title} в списке!</div>
+        `;
         alert(title + " в корзине!");
     }
 
