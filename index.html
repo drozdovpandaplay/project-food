@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Project Food: Ultimate</title>
+    <title>Project Food: Inventory</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
@@ -12,9 +12,7 @@
         
         .header { background: var(--white); padding: 15px 15px 5px 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         
-        /* Поиск */
         .search-box { width: 100%; padding: 12px 15px; border-radius: 12px; border: 1px solid #eee; background: #f9f9f9; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; outline: none; }
-        .search-box:focus { border-color: var(--main); background: #fff; }
 
         .filter-row { display: flex; overflow-x: auto; gap: 8px; padding: 5px 0 10px 0; scrollbar-width: none; }
         .filter-row::-webkit-scrollbar { display: none; }
@@ -25,17 +23,13 @@
         .active { display: block; }
 
         .recipe-card { background: var(--white); border-radius: 22px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 18px; border: 1px solid #f0f0f0; }
-        .category-tag { font-size: 10px; text-transform: uppercase; color: var(--main); font-weight: 800; letter-spacing: 0.5px; }
-        
-        .recipe-meta { display: flex; gap: 8px; margin: 10px 0; font-size: 11px; font-weight: 600; }
-        .meta-item { background: #f0f3f2; padding: 4px 10px; border-radius: 12px; color: #636e72; }
+        .category-tag { font-size: 10px; text-transform: uppercase; color: var(--main); font-weight: 800; }
         
         .person-selector { display: flex; align-items: center; gap: 12px; margin: 15px 0; background: #f9f9f9; padding: 10px; border-radius: 15px; }
         .person-btn { border: none; background: var(--main); color: white; width: 32px; height: 32px; border-radius: 10px; font-size: 18px; cursor: pointer; }
 
-        .cart-item { background: var(--white); padding: 15px; border-radius: 18px; margin-bottom: 10px; display: flex; align-items: center; border-left: 5px solid var(--main); transition: 0.2s; cursor: pointer; }
+        .cart-item, .ing-item { background: var(--white); padding: 15px; border-radius: 18px; margin-bottom: 10px; display: flex; align-items: center; border-left: 5px solid var(--main); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .cart-item.checked { opacity: 0.5; border-left-color: #bdc3c7; }
-        .cart-item.checked .item-name { text-decoration: line-through; }
         
         .checkbox { width: 22px; height: 22px; border: 2px solid var(--main); border-radius: 7px; margin-right: 15px; flex-shrink: 0; position: relative; }
         .cart-item.checked .checkbox { background: var(--main); }
@@ -44,22 +38,21 @@
         .total-box { background: var(--main); color: var(--white); padding: 25px; border-radius: 25px; text-align: center; margin-bottom: 25px; }
 
         .nav { position: fixed; bottom: 0; width: 100%; background: var(--white); display: flex; height: 75px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
-        .nav-btn { flex: 1; border: none; background: none; font-size: 12px; color: #b2bec3; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .nav-btn { flex: 1; border: none; background: none; font-size: 11px; color: #b2bec3; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
         .nav-btn.active-tab { color: var(--main); }
         
-        .btn-add { background: var(--main); color: var(--white); border: none; padding: 16px; border-radius: 16px; width: 100%; font-weight: 800; cursor: pointer; font-size: 15px; }
+        .btn-add { background: var(--main); color: var(--white); border: none; padding: 16px; border-radius: 16px; width: 100%; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="header" id="main-header">
-        <input type="text" id="searchInput" class="search-box" placeholder="🔍 Поиск блюда или продукта..." oninput="renderMenu()">
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 Поиск..." oninput="renderMenu()">
         <div class="filter-row">
             <button class="filter-btn active" onclick="filterBy('All', this)">Все</button>
             <button class="filter-btn" onclick="filterBy('Завтрак', this)">Завтраки</button>
             <button class="filter-btn" onclick="filterBy('Обед', this)">Обеды</button>
             <button class="filter-btn" onclick="filterBy('Ужин', this)">Ужины</button>
-            <button class="filter-btn" onclick="filterBy('Light', this)">🍀 < 400 ккал</button>
         </div>
     </div>
 
@@ -67,17 +60,23 @@
         <div id="recipes-container"></div>
     </div>
 
+    <div id="ings-page" class="page">
+        <h3 style="margin-top:0;">Все ингредиенты (справочник)</h3>
+        <div id="all-ingredients-list"></div>
+    </div>
+
     <div id="cart-page" class="page">
         <div class="total-box">
-            <div style="opacity: 0.8; font-size: 12px; margin-bottom: 5px; letter-spacing: 1px;">ОБЩИЙ БЮДЖЕТ</div>
+            <div style="opacity: 0.8; font-size: 12px; margin-bottom: 5px;">СУММА КУПОК</div>
             <div style="font-size: 36px; font-weight: 900;"><span id="total-price">0</span> ₽</div>
         </div>
         <div id="cart-items"></div>
-        <button class="btn-add" style="background:#ff7675; margin-top:20px;" onclick="clearCart()">ОЧИСТИТЬ КОРЗИНУ</button>
+        <button class="btn-add" style="background:#ff7675; margin-top:20px;" onclick="clearCart()">ОЧИСТИТЬ</button>
     </div>
 
     <nav class="nav">
         <button class="nav-btn active-tab" id="n-menu" onclick="showPage('menu')">🏠 Меню</button>
+        <button class="nav-btn" id="n-ings" onclick="showPage('ings')">📦 Продукты</button>
         <button class="nav-btn" id="n-cart" onclick="showPage('cart')">🛒 Корзина</button>
     </nav>
 
@@ -121,44 +120,49 @@
     function renderMenu() {
         const container = document.getElementById('recipes-container');
         const query = document.getElementById('searchInput').value.toLowerCase();
-        
-        let filtered = recipes.filter(r => {
-            const matchesSearch = r.name.toLowerCase().includes(query) || 
-                                 r.ings.some(ing => ing.n.toLowerCase().includes(query));
-            const matchesFilter = (currentFilter === 'All') || 
-                                 (currentFilter === 'Light' && r.kcal <= 400) || 
-                                 (r.cat === currentFilter);
-            return matchesSearch && matchesFilter;
-        });
+        let filtered = recipes.filter(r => r.name.toLowerCase().includes(query) && (currentFilter === 'All' || r.cat === currentFilter));
 
         container.innerHTML = filtered.map(r => {
             const p = selectedPersons[r.id] || 2;
             return `
             <div class="recipe-card">
                 <div class="category-tag">${r.cat}</div>
-                <h3 style="margin:5px 0 0 0;">${r.name}</h3>
-                <div class="recipe-meta">
-                    <span class="meta-item">🔥 ${r.kcal * p} kcal</span>
-                    <span class="meta-item">⚖️ ${r.weight * p} г</span>
-                </div>
+                <h3 style="margin:5px 0;">${r.name}</h3>
+                <div class="recipe-meta"><span class="meta-item">🔥 ${r.kcal*p} kcal</span><span class="meta-item">⚖️ ${r.weight*p}г</span></div>
                 <div class="person-selector">
                     <button class="person-btn" onclick="changeP(${r.id}, -1)">-</button>
-                    <b style="min-width:60px; text-align:center;">${p} чел</b>
+                    <b>${p} чел</b>
                     <button class="person-btn" onclick="changeP(${r.id}, 1)">+</button>
-                    <div style="margin-left:auto; font-weight:900; color:var(--main); font-size:18px;">${r.basePrice * p} ₽</div>
+                    <div style="margin-left:auto; font-weight:900;">${r.basePrice*p} ₽</div>
                 </div>
-                <button class="btn-add" onclick="addToCloud(${r.id})">ВЫБРАТЬ БЛЮДО</button>
+                <button class="btn-add" onclick="addToCloud(${r.id})">ВЫБРАТЬ</button>
             </div>`;
         }).join('');
     }
 
+    function renderInventory() {
+        const container = document.getElementById('all-ingredients-list');
+        const allIngs = {};
+        recipes.forEach(r => {
+            r.ings.forEach(i => {
+                if (!allIngs[i.n]) allIngs[i.n] = { unit: i.u, price: i.p };
+            });
+        });
+
+        container.innerHTML = Object.keys(allIngs).sort().map(name => `
+            <div class="ing-item">
+                <div style="flex-grow:1">
+                    <div style="font-weight:800">${name}</div>
+                    <div style="font-size:11px; color:#999">Базовая цена за порцию: ${allIngs[name].price} ₽</div>
+                </div>
+                <div style="color:var(--main); font-weight:bold">${allIngs[name].unit}</div>
+            </div>
+        `).join('');
+    }
+
     function changeP(id, delta) {
         let current = selectedPersons[id] || 2;
-        let next = current + delta;
-        if (next >= 1 && next <= 12) {
-            selectedPersons[id] = next;
-            renderMenu();
-        }
+        if (current + delta >= 1) { selectedPersons[id] = current + delta; renderMenu(); }
     }
 
     function addToCloud(id) {
@@ -167,7 +171,7 @@
         r.ings.forEach(ing => {
             db.ref("cart").push({ name: ing.n, amount: (ing.q * p).toFixed(1), unit: ing.u, price: ing.p * p, dish: r.name, checked: false });
         });
-        alert("Добавлено в корзину!");
+        alert("Добавлено!");
     }
 
     function toggleItem(id, status) { db.ref("cart/" + id).update({ checked: !status }); }
@@ -175,28 +179,21 @@
     db.ref("cart").on("value", (snap) => {
         const data = snap.val();
         const container = document.getElementById('cart-items');
-        const totalDisp = document.getElementById('total-price');
-        let total = 0;
-        container.innerHTML = "";
-        if (!data) {
-            container.innerHTML = "<div style='text-align:center; padding:40px; color:#b2bec3;'>Корзина пуста.</div>";
-            totalDisp.innerText = "0";
-            return;
-        }
+        let total = 0; container.innerHTML = "";
+        if (!data) { document.getElementById('total-price').innerText = "0"; return; }
         for (let id in data) {
-            const item = data[id];
-            total += item.price;
+            const item = data[id]; total += item.price;
             container.innerHTML += `
                 <div class="cart-item ${item.checked ? 'checked' : ''}" onclick="toggleItem('${id}', ${item.checked})">
                     <div class="checkbox"></div>
-                    <div style="flex-grow:1;">
-                        <div class="item-name" style="font-weight:800; font-size:15px;">${item.name}</div>
-                        <div style="font-size:11px; color:#999;">${item.dish} • ${item.amount} ${item.unit}</div>
+                    <div style="flex-grow:1">
+                        <div style="font-weight:800">${item.name}</div>
+                        <div style="font-size:11px; color:#999">${item.dish} • ${item.amount}${item.unit}</div>
                     </div>
-                    <div style="font-weight:900; color:var(--main)">${item.price} ₽</div>
+                    <div style="font-weight:900">${item.price} ₽</div>
                 </div>`;
         }
-        totalDisp.innerText = total.toLocaleString();
+        document.getElementById('total-price').innerText = total.toLocaleString();
     });
 
     function showPage(p) {
@@ -205,10 +202,10 @@
         document.getElementById(p + '-page').classList.add('active');
         document.getElementById('n-' + p).classList.add('active-tab');
         document.getElementById('main-header').style.display = (p === 'menu') ? 'block' : 'none';
-        window.scrollTo(0,0);
+        if (p === 'ings') renderInventory();
     }
 
-    function clearCart() { if(confirm("Очистить список?")) db.ref("cart").remove(); }
+    function clearCart() { if(confirm("Очистить?")) db.ref("cart").remove(); }
     renderMenu();
 </script>
 </body>
