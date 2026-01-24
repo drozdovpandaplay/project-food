@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Food: Pro Edition</title>
+    <title>Project Food: Финал</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #46b8bc; --accent: #ff9800; --bg: #f4f7f6; }
@@ -13,9 +13,7 @@
         select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #eee; font-size: 16px; margin: 20px 0; }
         .info-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
         .info-box { flex: 1; padding: 12px; background: #e0f2f1; border-radius: 10px; text-align: center; border: 2px solid var(--primary); font-weight: bold; }
-        .ingredient-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
-        .total-card { background: var(--primary); color: white; padding: 20px; border-radius: 15px; margin-top: 20px; text-align: center; }
-        .total-price { font-size: 32px; font-weight: bold; }
+        .total-card { background: var(--primary); color: white; padding: 20px; border-radius: 15px; margin-top: 20px; text-align: center; font-size: 24px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -32,9 +30,7 @@
             <div class="info-box">👥 <span id="servings-val">...</span></div>
         </div>
         <div id="ingredients-list"></div>
-        <div class="total-card">
-            <div class="total-price" id="total-val">0 ₽</div>
-        </div>
+        <div class="total-card" id="total-val">0 ₽</div>
     </div>
 </div>
 
@@ -48,78 +44,51 @@
 
     async function init() {
         try {
-            // Загружаем цены
             const { data: products } = await _supabase.from('products').select('*');
-            if (products) {
-                products.forEach(p => { priceMap[p.name.toLowerCase()] = p.price_per_unit; });
-            }
+            if (products) products.forEach(p => { priceMap[p.name.toLowerCase()] = p.price_per_unit; });
 
-            // Загружаем рецепты
             const { data: recipes, error } = await _supabase.from('recipes').select('*');
             if (error) throw error;
             
             allRecipes = recipes || [];
-            renderDropdown(allRecipes);
+            const select = document.getElementById('recipe-select');
+            select.innerHTML = '<option value="" disabled selected>🔍 Выберите блюдо...</option>';
+            
+            allRecipes.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id; opt.textContent = r.title;
+                select.appendChild(opt);
+            });
         } catch (err) {
-            console.error(err);
-            document.getElementById('recipe-select').innerHTML = '<option>Ошибка данных</option>';
+            document.getElementById('recipe-select').innerHTML = '<option>Ошибка: Проверь SQL в Supabase</option>';
         }
     }
 
-    function renderDropdown(recipes) {
-        const select = document.getElementById('recipe-select');
-        select.innerHTML = '<option value="" disabled selected>🔍 Выберите блюдо...</option>';
-
-        // Группировка по категориям
-        const groups = recipes.reduce((acc, r) => {
-            const cat = r.category || 'ПРОЧЕЕ';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(r);
-            return acc;
-        }, {});
-
-        Object.keys(groups).sort().forEach(cat => {
-            const group = document.createElement('optgroup');
-            group.label = cat.toUpperCase();
-            groups[cat].forEach(r => {
-                const opt = document.createElement('option');
-                opt.value = r.id; opt.textContent = r.title;
-                group.appendChild(opt);
-            });
-            select.appendChild(group);
-        });
-    }
-
-    document.getElementById('recipe-select').addEventListener('change', (e) => {
+    document.getElementById('recipe-select').onchange = (e) => {
         const recipe = allRecipes.find(r => r.id == e.target.value);
         if (!recipe) return;
 
         document.getElementById('recipe-info').style.display = 'block';
-        document.getElementById('weight-val').textContent = recipe.total_weight || '-';
-        document.getElementById('servings-val').textContent = (recipe.servings || '-') + ' чел';
+        document.getElementById('weight-val').textContent = recipe.total_weight;
+        document.getElementById('servings-val').textContent = recipe.servings + ' чел';
         
         const listDiv = document.getElementById('ingredients-list');
         listDiv.innerHTML = '';
         let total = 0;
 
-        try {
-            const ings = typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients;
-            ings.forEach(ing => {
-                const price = priceMap[ing.n.toLowerCase()] || 0;
-                // Убираем "кг" и меняем запятую на точку для расчета
-                const weightNum = parseFloat(ing.w.replace(',', '.').replace(/[^\d.]/g, '')) || 0;
-                const cost = price * weightNum;
-                total += cost;
-
-                listDiv.innerHTML += `
-                    <div class="ingredient-item">
-                        <span><strong>${ing.n}</strong> (${ing.w})</span>
-                        <span style="color: #2e7d32; font-weight:bold">${cost.toFixed(0)} ₽</span>
-                    </div>`;
-            });
-            document.getElementById('total-val').textContent = `${total.toFixed(0)} ₽`;
-        } catch (e) { console.error("Ошибка в составе рецепта", e); }
-    });
+        const ings = typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients;
+        ings.forEach(ing => {
+            const price = priceMap[ing.n.toLowerCase()] || 0;
+            const weightNum = parseFloat(ing.w.replace(',', '.').replace(/[^\d.]/g, '')) || 0;
+            const cost = price * weightNum;
+            total += cost;
+            listDiv.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee">
+                <span>${ing.n} (${ing.w})</span>
+                <b>${cost.toFixed(0)} ₽</b>
+            </div>`;
+        });
+        document.getElementById('total-val').textContent = total.toFixed(0) + ' ₽';
+    };
 
     init();
 </script>
