@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Настройки | GLEBOVA FOTO Admin</title>
+    <title>Услуги и цены | GLEBOVA FOTO Admin</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/responsive.css">
     <style>
@@ -45,22 +45,16 @@
             color: var(--accent-color);
         }
 
-        .settings-grid {
-            max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
+        .price-items {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
         }
 
-        .settings-group {
+        .price-editor {
             background: var(--glass-bg);
             padding: 30px;
             border: 1px solid var(--border-color);
-        }
-
-        .settings-group h3 {
-            margin-bottom: 20px;
-            font-family: 'Playfair Display', serif;
         }
     </style>
 </head>
@@ -73,42 +67,39 @@
                 <li><a href="dashboard.html">Дашборд</a></li>
                 <li><a href="portfolio.html">Портфолио</a></li>
                 <li><a href="clients.html">Заказы клиентов</a></li>
-                <li><a href="prices.html">Услуги и цены</a></li>
-                <li><a href="settings.html" class="active">Настройки</a></li>
+                <li><a href="prices.html" class="active">Услуги и цены</a></li>
+                <li><a href="settings.html">Настройки</a></li>
             </ul>
         </aside>
         <main class="admin-main">
-            <h1 style="font-family: 'Playfair Display', serif; margin-bottom: 40px;">Настройки</h1>
+            <h1 style="font-family: 'Playfair Display', serif; margin-bottom: 40px;">Услуги и цены</h1>
 
-            <div class="settings-grid">
-                <div class="settings-group">
-                    <h3>Уведомления (Telegram)</h3>
+            <div class="price-items">
+                <div class="price-editor">
+                    <h3>Базовый</h3>
                     <form class="contact-form">
-                        <div class="form-group">
-                            <label style="font-size: 0.8rem; color: var(--secondary-text);">Bot Token</label>
-                            <input type="password" value="••••••••••••••••••••">
-                        </div>
-                        <div class="form-group">
-                            <label style="font-size: 0.8rem; color: var(--secondary-text);">Chat ID</label>
-                            <input type="text" value="123456789">
-                        </div>
-                        <button class="btn btn-outline">Проверить соединение</button>
+                        <div class="form-group"><input type="text" value="5 000 ₽"></div>
+                        <textarea class="form-group"
+                            style="height: 150px;">- 2 часа съемки\n- 50 фото в цветокоррекции\n- 10 фото в ретуши</textarea>
+                        <button class="btn btn-primary w-100">Сохранить</button>
                     </form>
                 </div>
-
-                <div class="settings-group">
-                    <h3>Безопасность и хранение</h3>
+                <div class="price-editor" style="border-color: var(--accent-color);">
+                    <h3>Стандарт</h3>
                     <form class="contact-form">
-                        <div class="form-group">
-                            <label style="font-size: 0.8rem; color: var(--secondary-text);">Срок хранения галерей
-                                (мес)</label>
-                            <input type="number" value="6">
-                        </div>
-                        <div class="form-group">
-                            <label style="font-size: 0.8rem; color: var(--secondary-text);">Текст водяного знака</label>
-                            <input type="text" value="© GLEBOVA FOTO">
-                        </div>
-                        <button class="btn btn-primary">Сохранить всё</button>
+                        <div class="form-group"><input type="text" value="15 000 ₽"></div>
+                        <textarea class="form-group"
+                            style="height: 150px;">- 5 часов съемки\n- 150 фото в цветокоррекции\n- 30 фото в ретуши</textarea>
+                        <button class="btn btn-primary w-100">Сохранить</button>
+                    </form>
+                </div>
+                <div class="price-editor">
+                    <h3>Премиум</h3>
+                    <form class="contact-form">
+                        <div class="form-group"><input type="text" value="35 000 ₽"></div>
+                        <textarea class="form-group"
+                            style="height: 150px;">- Весь день\n- 400+ фото в цветокоррекции\n- 50 фото в ретуши</textarea>
+                        <button class="btn btn-primary w-100">Сохранить</button>
                     </form>
                 </div>
             </div>
