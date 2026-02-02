@@ -4,177 +4,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GLEBOVA FOTO | Портфолио фотографа</title>
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/responsive.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
-        rel="stylesheet">
+    <title>Управление портфолио | GLEBOVA FOTO Admin</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        .admin-sidebar {
+            background: var(--glass-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 40px 20px;
+        }
+
+        .admin-main {
+            padding: 40px;
+        }
+
+        .admin-nav {
+            list-style: none;
+            margin-top: 50px;
+        }
+
+        .admin-nav li {
+            margin-bottom: 20px;
+        }
+
+        .admin-nav a {
+            color: var(--secondary-text);
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .admin-nav a.active {
+            color: var(--accent-color);
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            padding: 40px;
+            text-align: center;
+            background: var(--glass-bg);
+            margin-bottom: 40px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-color);
+        }
+
+        .category-select {
+            margin-bottom: 20px;
+        }
+
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .portfolio-item {
+            position: relative;
+            aspect-ratio: 1;
+        }
+
+        .portfolio-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
-    <header class="header">
-        <nav class="nav container">
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
             <a href="/" class="logo">GLEBOVA FOTO</a>
-            <ul class="nav-list">
-                <li><a href="#portfolio" class="nav-link">Портфолио</a></li>
-                <li><a href="#about" class="nav-link">Обо мне</a></li>
-                <li><a href="#services" class="nav-link">Услуги</a></li>
-                <li><a href="#contacts" class="nav-link">Контакты</a></li>
-                <li><a href="/client" class="nav-link btn-client">Личный кабинет</a></li>
+            <ul class="admin-nav">
+                <li><a href="dashboard.html">Дашборд</a></li>
+                <li><a href="portfolio.html" class="active">Портфолио</a></li>
+                <li><a href="clients.html">Заказы клиентов</a></li>
+                <li><a href="prices.html">Услуги и цены</a></li>
+                <li><a href="settings.html">Настройки</a></li>
             </ul>
-            <div class="burger" id="burger">
-                <span></span>
-                <span></span>
-                <span></span>
+        </aside>
+        <main class="admin-main">
+            <div class="action-bar">
+                <h1 style="font-family: 'Playfair Display', serif;">Управление портфолио</h1>
+                <button class="btn btn-outline" id="btn-add-category">+ Новая категория</button>
             </div>
-        </nav>
-    </header>
 
-    <main>
-        <section class="hero">
-            <div class="hero-content container">
-                <h1 class="hero-title">Искусство <br><span class="accent-font">ловить мгновения</span></h1>
-                <p class="hero-subtitle">Профессиональная фотография в стиле минимализма. Свадьбы, Love Story и
-                    репортажи.</p>
-                <div class="hero-actions">
-                    <a href="#portfolio" class="btn btn-primary">Смотреть работы</a>
-                    <a href="#contacts" class="btn btn-outline">Забронировать дату</a>
-                </div>
+            <div class="category-select">
+                <select id="category-dropdown" class="form-group" style="max-width: 300px;">
+                    <option value="">Выберите категорию для загрузки</option>
+                    <!-- Categories loaded via JS -->
+                </select>
             </div>
-            <div class="hero-image-overlay"></div>
-        </section>
 
-        <section id="portfolio" class="portfolio container section-spacing">
-            <h2 class="section-title">Портфолио</h2>
-            <div class="category-filter">
-                <button class="filter-btn active" data-category="all">Все</button>
-                <button class="filter-btn" data-category="wedding">Свадебная</button>
-                <button class="filter-btn" data-category="love-story">Love Story</button>
-                <button class="filter-btn" data-category="portrait">Портрет</button>
-                <button class="filter-btn" data-category="event">Репортаж</button>
+            <div class="upload-zone" id="upload-zone">
+                <p>Перетащите фотографии сюда или нажмите для выбора</p>
+                <input type="file" id="file-input" multiple hidden accept="image/*">
             </div>
-            <div class="gallery-grid" id="gallery-grid">
-                <!-- Галерея будет загружаться динамически через JS -->
-                <div class="gallery-item loading">Загрузка...</div>
-            </div>
-        </section>
 
-        <section id="about" class="about section-spacing">
-            <div class="container about-grid">
-                <div class="about-image">
-                    <img src="https://images.unsplash.com/photo-1554080353-a576cf803bda?q=80&w=1974&auto=format&fit=crop"
-                        alt="Photographer" class="parallax">
-                </div>
-                <div class="about-text">
-                    <h2 class="section-title left">Обо мне</h2>
-                    <p>Привет! Меня зовут Люкс, и я вижу мир через объектив камеры уже более 10 лет. Моя страсть —
-                        ловить настоящие, живые эмоции, которые остаются с вами навсегда.</p>
-                    <p>Я специализируюсь на минималистичной фотографии, где ничто не отвлекает от красоты момента. Мой
-                        подход — это сочетание художественного видения и репортажной точности.</p>
-                    <div class="achievements">
-                        <div class="ach-item"><b>10+</b> лет опыта</div>
-                        <div class="ach-item"><b>500+</b> съемок</div>
-                        <div class="ach-item"><b>15</b> наград</div>
-                    </div>
-                </div>
+            <div class="portfolio-grid" id="portfolio-grid">
+                <!-- Images loaded via JS -->
             </div>
-        </section>
+        </main>
+    </div>
 
-        <section id="services" class="services section-spacing grey-bg">
-            <div class="container">
-                <h2 class="section-title">Услуги и прайс</h2>
-                <div class="pricing-grid">
-                    <div class="price-card">
-                        <h3>Базовый</h3>
-                        <div class="price">от 5 000 ₽</div>
-                        <ul>
-                            <li>2 часа съемки</li>
-                            <li>50 фото в цветокоррекции</li>
-                            <li>10 фото в ретуши</li>
-                            <li>Облачное хранилище (1 мес)</li>
-                        </ul>
-                        <a href="#contacts" class="btn btn-outline">Выбрать</a>
-                    </div>
-                    <div class="price-card featured">
-                        <div class="badge">Популярный</div>
-                        <h3>Стандарт</h3>
-                        <div class="price">от 15 000 ₽</div>
-                        <ul>
-                            <li>5 часов съемки</li>
-                            <li>150 фото в цветокоррекции</li>
-                            <li>30 фото в ретуши</li>
-                            <li>Облачное хранилище (6 мес)</li>
-                        </ul>
-                        <a href="#contacts" class="btn btn-primary">Выбрать</a>
-                    </div>
-                    <div class="price-card">
-                        <h3>Премиум</h3>
-                        <div class="price">от 35 000 ₽</div>
-                        <ul>
-                            <li>Весь день (до 12 часов)</li>
-                            <li>400+ фото в цветокоррекции</li>
-                            <li>50 фото в ретуши</li>
-                            <li>Облачное хранилище (1 год)</li>
-                        </ul>
-                        <a href="#contacts" class="btn btn-outline">Выбрать</a>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const uploadZone = document.getElementById('upload-zone');
+        const portfolioGrid = document.getElementById('portfolio-grid');
 
-        <section id="contacts" class="contacts section-spacing">
-            <div class="container contact-content">
-                <div class="contact-info">
-                    <h2 class="section-title left">Связаться</h2>
-                    <p>Хотите обсудить вашу будущую съемку? Просто напишите мне!</p>
-                    <div class="contact-links">
-                        <a href="tel:+79533360163">+7 (953) 336-01-63</a>
-                        <a href="mailto:hello@luxphoto.ru">hello@luxphoto.ru</a>
-                        <div class="social-icons">
-                            <!-- Icons placeholder -->
-                        </div>
-                    </div>
-                </div>
-                <form class="contact-form" id="contact-form">
-                    <div class="form-group">
-                        <input type="text" placeholder="Ваше имя" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="email" placeholder="Email" required>
-                    </div>
-                    <div class="form-group">
-                        <select>
-                            <option value="">Тип съемки</option>
-                            <option value="wedding">Свадьба</option>
-                            <option value="love-story">Love Story</option>
-                            <option value="portrait">Портрет</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <textarea placeholder="Ваш комментарий"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Отправить заявку</button>
-                </form>
-            </div>
-        </section>
-    </main>
+        uploadZone.onclick = () => fileInput.click();
 
-    <footer class="footer">
-        <div class="container footer-content">
-            <p>&copy; 2026 GLEBOVA FOTO. <a href="https://glebovafoto.ru"
-                    style="color: inherit; text-decoration: none;">glebovafoto.ru</a></p>
-            <div class="social-links">
-                <a href="#">Instagram</a>
-                <a href="#">Telegram</a>
-                <a href="#">WhatsApp</a>
-            </div>
-        </div>
-    </footer>
+        fileInput.onchange = async (e) => {
+            const files = e.target.files;
+            const categoryId = document.getElementById('category-dropdown').value;
+            if (!categoryId) { alert('Выберите категорию!'); return; }
 
-    <script src="js/main.js"></script>
+            for (let file of files) {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('category_id', categoryId);
+
+                // Placeholder for upload API
+                console.log('Загрузка файла:', file.name);
+                // await fetch('/api/portfolio/upload', { method: 'POST', body: formData });
+            }
+            alert('Загрузка завершена!');
+        };
+    </script>
 </body>
 
 </html>
